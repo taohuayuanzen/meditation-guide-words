@@ -308,3 +308,37 @@ def test_tts_factory():
 - 火山引擎与阿里云 TTS 接口参数、鉴权方式差异较大，需参考各自官方文档调整。
 - 长文本 TTS 可能需要分片合成，MVP 阶段可先限制单条引导词长度（如 < 5000 字）。
 - Worker 进程崩溃会导致未完成任务停滞，建议启动脚本中监控 worker 状态或自动重启。
+
+---
+
+## 当前进度（2026-08-05 · 已完成）
+
+### 已完成
+
+- [x] `app/services/` 包：`tts_base`（统一接口）、`tts_volcano`、`tts_aliyun`、`tts_factory`
+- [x] 火山引擎适配器：AK/SK 签名 → Access Token（实例级缓存 + 401 自动刷新）→ TTS 合成，返回解码拼接后的音频 bytes
+- [x] 阿里云适配器：DashScope `aigc/text2audio/generation` HTTP + API-Key，`voice_id` 映射为 `model`，`speed→rate`、`volume×100`
+- [x] Worker：轮询 pending → processing → 合成写文件 → completed / failed；失败自动重试 1 次后置 failed；文本 >5000 字直接失败
+- [x] `AudioTask` 新增 `retry_count` 字段；创建任务接口支持 `tts_params`；retry 接口重置 `retry_count/file_path`
+- [x] `test-tts` 接入 `get_tts_service` 工厂做配置校验（不发起外部合成）
+- [x] 单元测试 15 个新增（TTS 适配器 mock 测试 + Worker 全流程），全部通过（31 passed）
+- [x] Ruff 检查通过
+
+### 关键实现决策（已确认）
+
+| 决策点 | 结论 |
+|---|---|
+| 适配器实现深度 | 按两家真实协议实现（火山 AK/SK 签名换 token、阿里 DashScope），单元测试 mock 外部调用，需真实凭证联调 |
+| 失败重试 | 自动重试 1 次：首次失败 `retry_count=1` 回 `pending`，二次失败置 `failed` |
+| tts_params 写入 | `AudioTaskCreate` 增加可选 `tts_params`，参数优先级：任务级 > 全局 `tts_config` |
+| 静态音频服务 | 不挂载 `/api/audio-files`（StaticFiles 目录浏览有风险），仅保留 `/download` |
+| 长文本 | 不做分片，合成前校验长度 ≤ 5000 字，超长置失败 |
+| 测试范围 | 工厂/适配器 mock 测试 + Worker pending→completed/failed 全流程 |
+
+### 与文档差异 / 附带修改
+
+- **火山引擎**：任务文档示例（`Bearer; {api_key}` 直接调用、空 appid/cluster）无法工作。真实流程为 `POST /api/v1/auth/token`（HMAC-SHA256 签名）获取 Access Token，再调用 `/api/v1/tts`，响应为 base64 音频帧需解码拼接。`TTSConfig` 新增 `appid`、`cluster`（默认 `volcano_tts`）字段。
+- **阿里云**：任务文档示例的 `nls-gateway-.../stream/v1/tts` 为 WebSocket 协议（HTTP POST 不可用），改用 DashScope TTS HTTP 接口，`api_key` 即 DashScope API-Key，`voice_id` 即 sambert 模型名（如 `sambert-zhichu-v1`）。
+- `AudioTask` 新增 `retry_count` 列。当前无迁移工具，**开发库 `backend/data/meditation.db` 需删除重建**（参照 `docs/ops/backend/backend-startup.md` Q4）。
+- Worker 函数签名支持注入 `session_factory` / `poll_interval` / `max_batches`，便于测试与按需调用；启动方式 `uv run python -m app.services.audio_worker`。
+- `scripts/start.bat` 的 Worker 启动 TODO 暂未填充（backend/frontend 启动同样为 TODO，留待后续任务统一）。

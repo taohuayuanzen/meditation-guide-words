@@ -28,6 +28,7 @@ async def create_task(payload: AudioTaskCreate, db: DbSession):
     task = AudioTask(
         script_id=payload.script_id,
         voice_prompt=payload.voice_prompt,
+        tts_params=payload.tts_params,
         status="pending",
     )
     db.add(task)
@@ -63,6 +64,8 @@ async def retry_task(task_id: int, db: DbSession):
     task.status = "pending"
     task.error_msg = None
     task.completed_at = None
+    task.file_path = None
+    task.retry_count = 0
     await db.commit()
     await db.refresh(task)
     return task

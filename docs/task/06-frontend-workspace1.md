@@ -499,3 +499,42 @@ export default App
 - shadcn/ui 初始化可能因 Tailwind 版本或配置问题失败，需按官方文档逐步执行。
 - Dify SSE chunk 可能跨多个 JSON 对象，解析逻辑需要健壮性测试。
 - 工作区 1 和工作区 2 的 Dify `conversation_id` 应独立维护，避免上下文串扰。
+
+---
+
+## 当前进度（2026-08-05 · 已完成）
+
+### 已完成
+
+- [x] `frontend/` 初始化（Vite + React 18 + TypeScript，`npm run dev` 可启动）
+- [x] Tailwind v3.4 + PostCSS + `tailwindcss-animate` 配置完成
+- [x] shadcn/ui 初始化（New York + zinc）+ 安装 button/input/textarea/scroll-area/sheet/dialog/select
+- [x] Biome（单引号 + 分号，tech-spec 12.1）+ vite `@` 别名 + `/api` 代理到 `http://localhost:8000`
+- [x] i18n（react-i18next + LanguageDetector），zh/en 语言包**全量**翻译
+- [x] Zustand store + 布局（Sidebar / Header / MainLayout），工作区切换保持各工作区状态（均挂载 + `hidden` 切换）
+- [x] 顶栏 `⚙️` 设置占位按钮（disabled，T8 接入）
+- [x] 工作区 1：SSE 流式对话（健壮解析 `event:`/`data:`、跨帧缓冲、`message`/`agent_message`/`error` 事件）、多轮 `conversation_id` 回传、保存引导词（时间戳标题 + session_id）
+- [x] `biome lint` / `biome format` 无错误；`tsc -b && vite build` 通过
+- [x] 冒烟验证：`http://localhost:5173` 正常返回、`/api/health` 代理连通、模块编译无错
+
+### 关键实现决策（已确认）
+
+| 决策点 | 结论 |
+|---|---|
+| 技术栈版本 | Tailwind v3.4 + React 18，按任务文档 |
+| 代码风格 | Biome 单引号 + 分号（tech-spec 12.1），任务文档示例代码被统一格式化 |
+| 设置入口 | 顶栏放 `⚙️` 占位按钮，T8 实现弹窗 |
+| 前端测试 | 不加前端单测；Biome 保证质量，验收走手动 E2E（见 `docs/test/`） |
+| 语言包 | zh / en 全量翻译 |
+| 工作区状态保持 | 两个工作区常驻挂载 + CSS `hidden` 切换，切换不丢会话（PRD 4.1） |
+
+### 与文档差异 / 附带修改
+
+- `shadcn-ui` 包名已废弃；`shadcn@4.16.1` init 存在 workspace 配置 bug，改用 **`shadcn@2.3.0`**（Tailwind v3 兼容）完成 init 与组件安装
+- shadcn 生成的 CSS 变量为 `oklch`，`tailwind.config.js` 中颜色统一改为 `oklch(var(--...))`（否则 `hsl()` 包装会失效）；修复 shadcn 追加的重复 `require("tailwindcss-animate")`（ESM 下不可用）
+- `vite.config.ts` 别名改用 `fileURLToPath(new URL('./src', import.meta.url))`（`__dirname` 在 ESM 不可用）
+- `/api/scripts` 实际返回 `{items, total}`，`scriptService.fetchScripts` 按该结构解析
+- TS 6.0 弃用 `baseUrl`，tsconfig 仅保留 `paths`
+- 聊天区改用原生滚动容器 + 底部哨兵自动滚动（shadcn ScrollArea 无法直接拿 viewport ref），任务列表仍用 ScrollArea
+- 新增 `src/services/`（http/script/audioTask/dify）、`src/utils/sseParser.ts`（缓冲式 SSE 解析器，可复用）
+- Vite 模板自带 oxlint 已移除，仅保留 Biome

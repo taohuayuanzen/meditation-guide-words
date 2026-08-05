@@ -373,3 +373,32 @@ async function parseVoicePrompt(scriptId: number, voicePrompt: string): Promise<
 - Dify App B 返回的 JSON 可能包含 markdown 代码块，后端或前端需做清洗。
 - 长引导词合成耗时可能超过 30 秒，需确保前端轮询耐心和 Worker 超时设置合理。
 - 同时生成多个音频时，Worker 并发数需要限制，避免本地资源耗尽。
+
+---
+
+## 当前进度（2026-08-05 · 已完成）
+
+### 已完成
+
+- [x] `src/types/`：Script / ScriptListResponse / AudioTask（含 `retry_count`）/ AudioTaskStatus
+- [x] `src/services/scriptService.ts`（适配 `{items, total}`）、`audioTaskService.ts`（create 支持 `tts_params`、list、retry、download URL）
+- [x] 工作区 2：引导词下拉选择 + 内容预览 + 声音描述输入 + 生成按钮禁用逻辑
+- [x] 声音提示词解析：前端调 `/api/dify/audio/chat`（blocking）→ 清洗 markdown 代码块 → `JSON.parse` → 作为 `tts_params` 传入 `POST /api/audio-tasks`
+- [x] 任务列表：每 3s 轮询（仅存在 pending/processing 时），状态正确显示，已完成可播放/下载，失败显示错误并可重试
+- [x] 错误处理：解析失败提示"声音描述不清晰"、创建失败显示后端 `detail`、Dify 未配置提示
+- [x] `biome lint` / `biome format` 无错误；`tsc -b && vite build` 通过；冒烟验证通过
+
+### 关键实现决策（已确认）
+
+| 决策点 | 结论 |
+|---|---|
+| 声音提示词解析位置 | **前端解析**：`/api/dify/audio/chat` blocking → 清洗 markdown → `tts_params` 落库（复用 T5 能力），不改后端 |
+| 任务轮询 | 仅当存在 `pending`/`processing` 任务时启用 3s 定时器，完成后自动停止 |
+| 状态保持 | 与 T6 一致，工作区常驻挂载，切回后脚本选择/任务列表保留 |
+
+### 与文档差异 / 附带修改
+
+- `createAudioTask` 签名增加可选 `ttsParams`（对应 T5 后端 `tts_params` 字段）
+- 任务轮询做了优化：仅在存在活跃任务时轮询（文档 7.5 的优化点已实现）
+- 播放器 `<audio>` 增加 `preload="none"`，避免列表加载时预拉全量音频
+- 错误文案走 i18n（zh/en 全量）

@@ -15,6 +15,7 @@ class AudioTask(Base):
     voice_prompt: Mapped[str]
     tts_params: Mapped[dict | None] = mapped_column(JSON, default=None)
     status: Mapped[str] = mapped_column(default="pending")
+    retry_count: Mapped[int] = mapped_column(default=0)
     file_path: Mapped[str | None]
     error_msg: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(default=utc_now)

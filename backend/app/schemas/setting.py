@@ -14,6 +14,8 @@ class TTSConfig(BaseModel):
     provider: str = "volcano"
     api_key: str = ""
     secret_key: str = ""
+    appid: str = ""
+    cluster: str = "volcano_tts"
     voice_id: str = ""
     speed: float = Field(default=1.0, ge=0.5, le=2)
     volume: float = Field(default=1.0, ge=0, le=2)

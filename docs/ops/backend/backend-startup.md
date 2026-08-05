@@ -181,6 +181,6 @@ backend/
 
 ## 相关文档
 
-- [T2 任务文档](../task/02-backend-foundation.md)
-- [技术规范 — 第 3、4、8、14 章](../tech/tech-spec.md)
-- [PRD — 第 4、5 章](../prd/meditation-guide-words-prd.md)
+- [T2 任务文档](../../task/02-backend-foundation.md)
+- [技术规范 — 第 3、4、8、14 章](../../tech/tech-spec.md)
+- [PRD — 第 4、5 章](../../prd/meditation-guide-words-prd.md)

@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.db import get_db
 from app.models.setting import Setting
 from app.schemas.setting import LLMConfig, SettingSchema, TTSConfig
+from app.services.tts_factory import get_tts_service
 
 logger = logging.getLogger(__name__)
 
@@ -77,7 +78,20 @@ async def test_llm(config: LLMConfig):
 
 @router.post("/test-tts")
 async def test_tts(config: TTSConfig):
-    # TODO(T5): 接入 TTSService 真实合成验证；当前仅校验配置完整性
-    if not config.api_key:
-        raise HTTPException(status_code=400, detail="TTS API Key 未配置")
+    try:
+        service = get_tts_service(config.model_dump())
+    except ValueError as exc:
+        raise HTTPException(status_code=400, detail=str(exc)) from exc
+    if not service.is_available():
+        raise HTTPException(status_code=400, detail="TTS 配置不完整：未配置必要的凭证")
+    if not config.voice_id:
+        raise HTTPException(status_code=400, detail="请先填写音色 ID（voice_id）")
+    try:
+        await service.synthesize(text="你好，这是一段测试音频。", voice_id=config.voice_id)
+    except httpx.HTTPError as exc:
+        logger.warning("TTS test failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"TTS 连接失败: {exc}") from exc
+    except Exception as exc:
+        logger.warning("TTS test failed: %s", exc)
+        raise HTTPException(status_code=502, detail=f"TTS 合成失败: {exc}") from exc
     return {"status": "ok"}

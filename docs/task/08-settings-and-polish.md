@@ -440,3 +440,41 @@ npm run format
 - Windows bat 脚本的后台进程管理较粗糙，关闭启动窗口不会自动停止子进程，可考虑后续改为 PowerShell 脚本。
 - Docker Desktop 在 Windows 下启动 Dify 可能占用较多内存（建议 8GB+）。
 - 测试连接接口调用真实外部 API，可能因网络问题偶发失败，需给出清晰错误提示。
+
+---
+
+## 当前进度（2026-08-06 · 已完成）
+
+### 已完成
+
+- [x] 设置页：`SettingsDialog`（Dialog + Tabs 四块）+ LLM / TTS / Dify / General 四个设置组件
+- [x] Header `⚙️` 按钮接入设置弹窗（移除禁用占位）
+- [x] 设置数据：`settingsStore`（Zustand）+ `settingsService`（fetch/save/testLLM/testTTS）+ `Settings` 类型
+- [x] 统一"保存全部"：弹窗打开时一次加载，各 Tab 编辑，底部一次 POST 提交
+- [x] 主题实际生效：`applyTheme` 切换 `<html>` 的 `.dark` class（浅色/深色即时预览 + 保存持久化）
+- [x] 语言持久化：`useAppBootstrap` 启动时读 `settings.language` 并 `i18n.changeLanguage`；通用设置里切换即时生效
+- [x] `test-llm` 真实调用（T4 已实现）；`test-tts` 升级为**真实合成**（含音色 ID 校验，T5 仅配置校验）
+- [x] 后端测试补充：test-tts 真实合成/失败/缺音色、audio-tasks 带 `tts_params` 创建、retry 重置 `retry_count`/`file_path`（36 个用例全过）
+- [x] 一键启动：`scripts/start.sh` / `start.bat`（DIFY_DIR 环境变量优先 + 常见路径探测 + `docker compose` + `http://localhost/` 检测，未找到仅警告）
+- [x] README 重写：环境要求、一键/手动启动、首次配置（设置页）、开发命令、常见问题
+- [x] i18n：settings 全量文案 + `common.*`（zh/en）
+- [x] Biome / Ruff 检查通过；`tsc -b && vite build` 通过；冒烟验证（设置 API 往返、新模块编译）通过
+
+### 关键实现决策（已确认）
+
+| 决策点 | 结论 |
+|---|---|
+| test-tts 深度 | **真实合成**：`service.synthesize("你好，这是一段测试音频。", voice_id)`，缺音色返回 400，失败返回 502 + detail |
+| 设置保存方式 | **统一"保存全部"**：弹窗打开时一次 GET，底部一次 POST 全量提交 |
+| 深色主题 | **实际生效**：`<html>.dark` class 切换，shadcn `.dark` 变量已就绪 |
+| 语言持久化 | 启动时应用 `settings.language` + 切换即时生效 + 保存 |
+| 供应商选项 | TTS 仅 volcano/aliyun（后端 factory 支持）；LLM 保留 deepseek/kimi/custom（test-llm 为通用 OpenAI 兼容调用） |
+| 启动脚本 Dify 策略 | `DIFY_DIR` 环境变量优先 + 探测常见路径 + `docker compose up -d` + 检测 `http://localhost/`；未找到 Dify 仅警告不阻塞 |
+
+### 与文档差异 / 附带修改
+
+- 文档 8.3 TTS 字段补充 `appid` / `cluster`（T5 已加，火山鉴权必需）
+- 文档 8.9 脚本修正：`docker-compose` → `docker compose`；Dify 目录改为探测；健康检测改为 `http://localhost/`
+- `shadcn@2.3.0 add label tabs` 未实际写入组件文件（CLI 交互异常），手动创建标准 shadcn v2 `label.tsx` / `tabs.tsx`（radix 依赖已装）
+- 设置弹窗引入 `structuredClone` 做草稿深拷贝；`max_tokens` 空值映射为 `null`
+- 文档 8.7 的 `test-llm` 沿用 T4 实现（已含 `model` 默认值、连接错误 502 处理），未改动
