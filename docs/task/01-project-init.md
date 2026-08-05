@@ -160,11 +160,11 @@ git commit -m "chore: init project structure and scripts"
 
 ## 验收标准
 
-- [ ] 项目目录结构与本文档一致
-- [ ] `.gitignore` 正确忽略 `data/`、`node_modules/`、`__pycache__/` 等
-- [ ] `README.md` 包含项目简介、技术栈、快速开始、文档链接
-- [ ] `scripts/start.sh` 和 `scripts/start.bat` 存在且可执行
-- [ ] 初始 Git 提交成功
+- [x] 项目目录结构与本文档一致
+- [x] `.gitignore` 正确忽略 `data/`、`node_modules/`、`__pycache__/` 等
+- [x] `README.md` 包含项目简介、技术栈、快速开始、文档链接
+- [x] `scripts/start.sh` 和 `scripts/start.bat` 存在且可执行
+- [x] 初始 Git 提交成功
 
 ---
 
