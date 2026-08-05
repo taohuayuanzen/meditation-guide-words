@@ -341,8 +341,8 @@ class Script(Base):
     title: Mapped[str]
     content: Mapped[str]
     session_id: Mapped[str | None]
-    created_at: Mapped[datetime]
-    updated_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
 ```
 
 ### 8.2 AudioTask（音频任务）
@@ -357,7 +357,7 @@ class AudioTask(Base):
     status: Mapped[str]  # pending / processing / completed / failed
     file_path: Mapped[str | None]
     error_msg: Mapped[str | None]
-    created_at: Mapped[datetime]
+    created_at: Mapped[datetime] = mapped_column(default=utc_now)
     completed_at: Mapped[datetime | None]
 ```
 
@@ -366,13 +366,15 @@ class AudioTask(Base):
 class Setting(Base):
     __tablename__ = "settings"
 
-    id: Mapped[int] = mapped_column(primary_key=True, default=1)
+    id: Mapped[int] = mapped_column(primary_key=True, default=1, autoincrement=False)
     llm_config: Mapped[dict]
     tts_config: Mapped[dict]
     dify_config: Mapped[dict]
     general_config: Mapped[dict]
-    updated_at: Mapped[datetime]
+    updated_at: Mapped[datetime] = mapped_column(default=utc_now)
 ```
+
+> 时间字段统一使用 `app.utils.time_utils.utc_now()`，替代已弃用的 `datetime.utcnow`。
 
 ---
 

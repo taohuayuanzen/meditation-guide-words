@@ -15,6 +15,7 @@ build/
 # Data
 data/*
 !data/.gitkeep
+backend/data/
 
 # IDE
 .vscode/
