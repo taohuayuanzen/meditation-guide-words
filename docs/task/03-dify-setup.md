@@ -15,32 +15,75 @@
 
 ---
 
+## 当前进度（2026-08-05）
+
+### 已完成
+
+- [x] Dify 源码已就绪（`D:\project\github\dify\dify-1.16.1`，v1.16.1）
+- [x] Docker Desktop v29.6.2 已安装（WSL2 后端）
+- [x] Dify `.env` 已从 `.env.example` 创建
+- [x] `backend/.env.example` 模板已创建
+- [x] Docker `daemon.json` 已配置镜像加速器（`docker.1ms.run`）
+- [x] 11/12 个 Docker 镜像已拉取完成（仅缺 `langgenius/dify-api:1.16.1`）
+
+### 待完成
+
+- [ ] 拉取 `dify-api` 镜像并启动 Dify（docker compose up -d）
+- [ ] 创建管理员账号（访问 `http://localhost/install`）
+- [ ] 创建两个 Chatflow 应用并配置 System Prompt
+- [ ] 获取 API Key 并填入 `backend/.env`
+- [ ] curl 验证 API 连通性
+
+### 镜像拉取状态
+
+| 镜像 | 状态 |
+|------|------|
+| `busybox:latest` | ✅ |
+| `redis:6-alpine` | ✅ |
+| `postgres:15-alpine` | ✅ |
+| `nginx:latest` | ✅ |
+| `ubuntu/squid:latest` | ✅ |
+| `semitechnologies/weaviate:1.27.0` | ✅ |
+| `langgenius/dify-sandbox:0.2.15` | ✅ |
+| `langgenius/dify-web:1.16.1` | ✅ |
+| `langgenius/dify-plugin-daemon:0.6.3-local` | ✅ |
+| `langgenius/dify-agent-backend:1.16.1` | ✅ |
+| `langgenius/dify-agent-local-sandbox:1.16.1` | ✅ |
+| `langgenius/dify-api:1.16.1` | ❌ 未拉取（~2GB，公共镜像未缓存大层） |
+
+### 实践经验
+
+- **DaoCloud 镜像**（`docker.m.daocloud.io`）对小镜像速度快，但 `dify-api` 大镜像未缓存
+- **`docker.1ms.run`** 能拉取 `dify-api` 的大层（单次拉到 155MB/326MB 后断流）
+- **VPN/代理直连 Docker Hub** 是最终可靠方案
+- Docker 层缓存支持断点续传，重试跳过已下载层
+
+### 磁盘空间
+
+- 已清理 WPSDrive 缓存释放 **23.3GB**
+- Docker 数据盘（`docker_data.vhdx`）约 13.9GB
+- 建议保持 **≥5GB** 空闲
+
+---
+
 ## 详细步骤
 
 ### 3.1 选择 Dify 部署路径
 
-建议部署到 `D:/project/github/dify`，作为多个本地项目共享的 Dify 实例。
+部署路径：`D:\project\github\dify\dify-1.16.1`（v1.16.1 稳定 tag，已就绪）。
 
-```bash
-mkdir -p D:/project/github
-cd D:/project/github
-git clone https://github.com/langgenius/dify.git
-cd dify
-```
-
-> 建议使用稳定 tag，而非 main 分支：
-> ```bash
-> git checkout $(git describe --tags $(git rev-list --tags --max-count=1))
-> ```
+> **决策确认**：使用实际解压路径 `D:\project\github\dify\dify-1.16.1`，带版本号便于后续升级管理。多个本地项目可共享此 Dify 实例。
 
 ### 3.2 启动 Dify
 
-```bash
-cd docker
-docker-compose up -d
+```powershell
+# Docker 不在 PATH 时需先设置
+$env:Path = "C:\Program Files\Docker\Docker\resources\bin;$env:Path"
+cd D:\project\github\dify\dify-1.16.1\docker
+docker compose up -d
 ```
 
-首次启动会拉取镜像并初始化数据库，耗时约 5~15 分钟。
+首次启动会拉取镜像并初始化数据库。如遇网络问题，参见 `docs/ops/docker-mirror-setup.md`。
 
 ### 3.3 初始化管理员账号
 
@@ -52,8 +95,10 @@ docker-compose up -d
 
 | 应用名 | API 名称 | 类型 |
 |---|---|---|
-| `冥想引导词生成` | `meditation-script-gen` | Chatflow / Chatbot |
+| `冥想引导词生成` | `meditation-script-gen` | Chatflow |
 | `冥想音频生成` | `meditation-audio-gen` | Chatflow |
+
+> **决策确认**：两个应用均选择 **Chatflow**，支持可视化工作流编排，后续可灵活加入变量、条件分支等节点。
 
 ### 3.5 配置"引导词生成"应用（App A）
 
@@ -71,9 +116,13 @@ docker-compose up -d
 ```
 
 #### 模型配置
-- 在"编排"中选择 LLM 模型（后续通过设置页调用时，Dify 会使用其自身配置的模型，FastAPI 只负责转发）。
+- **模型提供商**：DeepSeek（与项目 `Setting.llm_config.provider` 默认值一致）
+- 在 Dify 设置页 → 模型供应商 → 添加 DeepSeek，填入 API Key
+- 在 Chatflow 编排中选择 DeepSeek 模型（如 `deepseek-chat`）
 - 流式输出：开启
 - 上下文轮数：建议 6 轮
+
+> **决策确认**：使用 DeepSeek 作为 LLM 提供商，与项目后端 Schema 默认 `provider = "deepseek"` 保持一致。
 
 ### 3.6 配置"音频生成"应用（App B）
 
@@ -159,19 +208,25 @@ curl -X POST 'http://localhost/v1/chat-messages' \
 
 ### 3.9 记录配置信息
 
-将以下信息记录下来，后续填入设置页或环境变量：
+将获取的 API Key 填入 `backend/.env` 文件（从 `.env.example` 复制）：
 
-```
+```bash
+# 复制模板文件
+copy backend\.env.example backend\.env
+
+# 编辑 backend\.env，填入实际的 API Key：
 DIFY_BASE_URL=http://localhost/v1
-DIFY_SCRIPT_APP_KEY=xxx
-DIFY_AUDIO_APP_KEY=xxx
+DIFY_SCRIPT_APP_KEY=app-xxxxxxxxxxxxx
+DIFY_AUDIO_APP_KEY=app-xxxxxxxxxxxxx
 ```
+
+> `backend/.env` 已在 `.gitignore` 中，不会提交到版本控制。
 
 ---
 
 ## 关键设计点
 
-- Dify 部署在 `D:/project/github/dify`，与 meditation-guide-words 项目解耦，可被多个项目共享。
+- Dify 部署在 `D:/project/github/dify/dify-1.16.1`，与 meditation-guide-words 项目解耦，可被多个项目共享。
 - 两个 Chat 应用职责单一：一个只生成文本，一个只解析声音提示词。
 - App B 的 LLM 必须严格输出 JSON，System Prompt 中需反复强调"只输出 JSON"。
 - 流式响应使用 Dify 的 `response_mode=streaming`；解析 TTS 参数使用 `blocking` 更稳定。
@@ -180,7 +235,7 @@ DIFY_AUDIO_APP_KEY=xxx
 
 ## 验收标准
 
-- [ ] Dify 成功部署到 `D:/project/github/dify` 并通过 Docker 运行
+- [ ] Dify 成功部署到 `D:/project/github/dify/dify-1.16.1` 并通过 Docker 运行
 - [ ] 管理员账号已创建，可登录 `http://localhost`
 - [ ] 已创建两个 Chat 应用，分别命名为"冥想引导词生成"和"冥想音频生成"
 - [ ] App A 的 System Prompt 配置完成，流式调用可返回引导词文本
@@ -194,11 +249,16 @@ DIFY_AUDIO_APP_KEY=xxx
 
 - `docs/tech/tech-spec.md` 第 5 章
 - `docs/prd/meditation-guide-words-prd.md` 第 6 章
+- `docs/ops/docker-mirror-setup.md` — Docker 镜像加速器配置（国内用户必读）
+- `docs/ops/t3-handover.md` — T3 交接文档（当前状态 + 继续步骤）
 
 ---
 
 ## 风险备注
 
-- Windows Docker Desktop 默认挂载到 WSL2，路径兼容性需注意。建议使用 `D:/project/github/dify` 绝对路径启动。
-- Dify 首次启动镜像较大，网络不稳定时可能失败，需重试或配置镜像加速。
+- **Docker 不在 PATH**：需设置 `$env:Path = "C:\Program Files\Docker\Docker\resources\bin;$env:Path"` 或加入系统 PATH。
+- **Docker credential 助手报错**：`docker-credential-desktop: executable file not found in %PATH%`，原因同上。
+- **国内网络问题**：Dify 首次启动需拉取 10+ 个镜像（总计约 10GB），公共镜像对大镜像层（>50MB）缓存不完整。推荐使用 VPN/代理直连 Docker Hub。
+- **磁盘空间**：Dify 全套镜像 + WSL2 VM 约需 15-20GB。确保 C 盘 ≥5GB 空闲。
+- **`docker info` 不显示镜像**：`Registry Mirrors:` 始终为空，但不影响实际使用（已验证镜像确实走加速器）。
 - App B 输出 JSON 不稳定时，可在 System Prompt 中增加示例（few-shot）提升一致性。
