@@ -1,3 +1,7 @@
+<!-- 状态：✅ 验收通过（2026-08-05）
+     初始提交：f2350d0 chore: init project structure and scripts
+     已推送至远程：github.com/taohuayuanzen/meditation-guide-words（main 分支） -->
+
 # T1：项目初始化与基础设施搭建
 
 ## 任务目标
