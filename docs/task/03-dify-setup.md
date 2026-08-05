@@ -15,24 +15,31 @@
 
 ---
 
-## 当前进度（2026-08-05）
+## 当前进度（2026-08-05 晚 · 已完成）
+
+> **实际部署路径**：`C:\projects\github\dify\dify-1.16.1`（家中电脑，与文档示例 `D:\project\github\dify` 不同；脚本侧由环境变量 `DIFY_DIR` 覆盖，见 T8）
 
 ### 已完成
 
-- [x] Dify 源码已就绪（`D:\project\github\dify\dify-1.16.1`，v1.16.1）
+- [x] Dify 源码已就绪（`C:\projects\github\dify\dify-1.16.1`，v1.16.1）
 - [x] Docker Desktop v29.6.2 已安装（WSL2 后端）
-- [x] Dify `.env` 已从 `.env.example` 创建
+- [x] Dify `.env` 已从 `.env.example` 创建（默认配置，`SECRET_KEY` 留空自动生成）
 - [x] `backend/.env.example` 模板已创建
 - [x] Docker `daemon.json` 已配置镜像加速器（`docker.1ms.run`）
-- [x] 11/12 个 Docker 镜像已拉取完成（仅缺 `langgenius/dify-api:1.16.1`）
+- [x] 12/12 个 Docker 镜像已拉取完成（本机全量重拉，直连 Docker Hub）
+- [x] Dify 已启动：`docker compose up -d`（15 个容器，`docker-api-1` healthy）
+- [x] 管理员账号已创建（`http://localhost/install`）
+- [x] DeepSeek 模型已配置（插件 `langgenius/deepseek:0.0.19` 已安装并配置 API Key）
+- [x] 两个 Chatflow 应用已创建并配置 System Prompt
+- [x] 两个应用的 API Key 已获取并填入 `backend/.env`
+- [x] curl 验证 API 连通性（App A 流式 / App B blocking 均正常）
 
-### 待完成
+### 应用信息
 
-- [ ] 拉取 `dify-api` 镜像并启动 Dify（docker compose up -d）
-- [ ] 创建管理员账号（访问 `http://localhost/install`）
-- [ ] 创建两个 Chatflow 应用并配置 System Prompt
-- [ ] 获取 API Key 并填入 `backend/.env`
-- [ ] curl 验证 API 连通性
+| 应用 | Dify App ID | API Key | 说明 |
+|---|---|---|---|
+| App A 冥想引导词生成 | `b9f7e107-3684-488e-9850-ca0ed1d25fef` | `app-8xRdywVvvHTU0TbltNn2FE0D` | streaming，deepseek-chat，上下文 6 轮 |
+| App B 冥想音频生成 | `be4954e7-24bd-489b-80b8-0b1bc7fc958f` | `app-AJ5RHvv2bNgt7T7ee86FYavz` | blocking，输出 TTS 参数 JSON |
 
 ### 镜像拉取状态
 
@@ -49,14 +56,18 @@
 | `langgenius/dify-plugin-daemon:0.6.3-local` | ✅ |
 | `langgenius/dify-agent-backend:1.16.1` | ✅ |
 | `langgenius/dify-agent-local-sandbox:1.16.1` | ✅ |
-| `langgenius/dify-api:1.16.1` | ❌ 未拉取（~2GB，公共镜像未缓存大层） |
+| `langgenius/dify-api:1.16.1` | ✅（4.15GB，直连拉取，偶发 EOF 断流，重试 4 次完成） |
 
 ### 实践经验
 
 - **DaoCloud 镜像**（`docker.m.daocloud.io`）对小镜像速度快，但 `dify-api` 大镜像未缓存
 - **`docker.1ms.run`** 能拉取 `dify-api` 的大层（单次拉到 155MB/326MB 后断流）
-- **VPN/代理直连 Docker Hub** 是最终可靠方案
+- **VPN/代理直连 Docker Hub** 是最终可靠方案（本机 4 次重试完成全部镜像）
 - Docker 层缓存支持断点续传，重试跳过已下载层
+- **Dify 1.16 登录密码需 Base64 编码**（`FieldEncryption.decrypt_field`）
+- **Console API 需携带 CSRF**：`X-CSRF-Token` 头 = `csrf_token` cookie 值
+- **DeepSeek 是插件式提供商**：需先安装 `langgenius/deepseek` 插件（详见踩坑记录）
+- **工作流节点 ID 不能含连字符 `-`**：模板正则 `[a-zA-Z0-9_]` 不匹配，需用 `llm1`/`start`/`answer1` 这类 ID
 
 ### 磁盘空间
 
@@ -235,13 +246,13 @@ DIFY_AUDIO_APP_KEY=app-xxxxxxxxxxxxx
 
 ## 验收标准
 
-- [ ] Dify 成功部署到 `D:/project/github/dify/dify-1.16.1` 并通过 Docker 运行
-- [ ] 管理员账号已创建，可登录 `http://localhost`
-- [ ] 已创建两个 Chat 应用，分别命名为"冥想引导词生成"和"冥想音频生成"
-- [ ] App A 的 System Prompt 配置完成，流式调用可返回引导词文本
-- [ ] App B 的 System Prompt 配置完成，blocking 调用可返回标准 JSON 参数
-- [ ] 已获取两个应用的 API Key 并记录
-- [ ] 通过 `curl` 验证两个应用 API 均可正常访问
+- [x] Dify 成功部署到 `C:\projects\github\dify\dify-1.16.1` 并通过 Docker 运行
+- [x] 管理员账号已创建，可登录 `http://localhost`
+- [x] 已创建两个 Chat 应用，分别命名为"冥想引导词生成"和"冥想音频生成"
+- [x] App A 的 System Prompt 配置完成，流式调用可返回引导词文本
+- [x] App B 的 System Prompt 配置完成，blocking 调用可返回标准 JSON 参数
+- [x] 已获取两个应用的 API Key 并记录
+- [x] 通过 `curl` 验证两个应用 API 均可正常访问
 
 ---
 

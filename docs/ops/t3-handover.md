@@ -3,29 +3,41 @@
 > 日期：2026-08-05  
 > 交接原因：切换至家中电脑继续  
 > 关联任务：`docs/task/03-dify-setup.md`
+> **状态：已完成（2026-08-05 晚）**
 
 ---
 
-## 一、当前状态
+## 一、当前状态（最终完成）
 
-### 已完成部分
+### 完成项
 
 | 项目 | 状态 | 说明 |
 |------|------|------|
-| Dify 源码 | ✅ | `D:\project\github\dify\dify-1.16.1`，v1.16.1 |
+| Dify 源码 | ✅ | `C:\projects\github\dify\dify-1.16.1`，v1.16.1 |
 | Docker Desktop | ✅ | v29.6.2，WSL2 后端 |
-| Dify .env | ✅ | 已从 `.env.example` 复制，使用默认配置即可 |
-| `backend/.env.example` | ✅ | 模板已创建，含 Dify 配置占位符 |
-| 镜像加速器 | ✅ | `daemon.json` 已配置 `docker.1ms.run` |
-| Docker 镜像 | 🔄 11/12 | 仅缺 `langgenius/dify-api:1.16.1` |
+| Dify .env | ✅ | 已从 `.env.example` 复制，默认配置 |
+| Dify 运行 | ✅ | 15 个容器，`docker-api-1` healthy |
+| 管理员账号 | ✅ | `taoyuanzen@gmail.com` |
+| DeepSeek 模型 | ✅ | 插件 `langgenius/deepseek:0.0.19` 已装并配 Key |
+| App A 引导词生成 | ✅ | Chatflow，streaming，deepseek-chat，6 轮上下文 |
+| App B 音频生成 | ✅ | Chatflow，blocking，输出 TTS 参数 JSON |
+| API Key | ✅ | 已写入 `backend/.env` |
+| 验证 | ✅ | App A 流式 / App B blocking 均正常 |
 
-### 已拉取的 11 个镜像
+### 应用与 Key
 
-`busybox:latest`, `redis:6-alpine`, `postgres:15-alpine`, `nginx:latest`, `ubuntu/squid:latest`, `semitechnologies/weaviate:1.27.0`, `langgenius/dify-sandbox:0.2.15`, `langgenius/dify-web:1.16.1`, `langgenius/dify-plugin-daemon:0.6.3-local`, `langgenius/dify-agent-backend:1.16.1`, `langgenius/dify-agent-local-sandbox:1.16.1`
+| 应用 | App ID | API Key |
+|------|--------|---------|
+| App A 冥想引导词生成 | `b9f7e107-3684-488e-9850-ca0ed1d25fef` | `app-8xRdywVvvHTU0TbltNn2FE0D` |
+| App B 冥想音频生成 | `be4954e7-24bd-489b-80b8-0b1bc7fc958f` | `app-AJ5RHvv2bNgt7T7ee86FYavz` |
+
+> 12/12 镜像已拉取：`busybox:latest`、`redis:6-alpine`、`postgres:15-alpine`、`nginx:latest`、`ubuntu/squid:latest`、`semitechnologies/weaviate:1.27.0`、`langgenius/dify-sandbox:0.2.15`、`langgenius/dify-web:1.16.1`、`langgenius/dify-plugin-daemon:0.6.3-local`、`langgenius/dify-agent-backend:1.16.1`、`langgenius/dify-agent-local-sandbox:1.16.1`、`langgenius/dify-api:1.16.1`
 
 ---
 
-## 二、家中电脑继续步骤
+## 二、已完成步骤记录（2026-08-05 家中电脑）
+
+> 以下步骤均已完成，保留作复现参考。实际路径为 `C:\projects\github\dify\dify-1.16.1`。
 
 ### 前置条件
 
@@ -194,6 +206,15 @@ curl -X POST 'http://localhost/v1/chat-messages' \
 | 5 | `docker info` 不显示镜像 | 已知 bug，不影响实际功能 | 忽略，镜像仍然走加速器 |
 | 6 | Docker Desktop 无法启动 | C 盘已满 | 清理 WPSDrive（23GB）等后释放空间 |
 | 7 | `daemon.json` 修改后不生效 | WSL2 后端需重启 Docker Desktop | Apply & Restart 即可 |
+| 8 | 登录返回 `Invalid encrypted data` | Dify 1.16 登录密码需 **Base64 编码** | `[Convert]::ToBase64String([Text.Encoding]::UTF8.GetBytes($pwd))` |
+| 9 | Console API 报 `CSRF token is missing or invalid` | 需携带 `X-CSRF-Token` 头 = `csrf_token` cookie | 请求时同时传 `-b "csrf_token=...; access_token=..."` 与 `-H "X-CSRF-Token: ..."` |
+| 10 | `Provider deepseek does not exist` | 1.16 中 DeepSeek 是**插件**，未安装 | 安装 `langgenius/deepseek` 插件 |
+| 11 | 市场安装报 `difypkg: not a valid difypkg file` | 1.16.1 用裸标识符 `langgenius/deepseek` 下载，市场现要求**版本化标识符** | 手动下载：`marketplace.dify.ai/api/v1/plugins/download?unique_identifier=langgenius/deepseek:0.0.19@<checksum>` → `upload/pkg` 上传 → `install/pkg` 安装 |
+| 12 | 模型凭证报 `Provider langgenius/deepseek does not exist` | 插件 provider 名为 `langgenius/deepseek/deepseek` | 用 `/model-providers/langgenius/deepseek/deepseek/credentials` |
+| 13 | 工作流 answer 显示原始 `{{#...}}` 未解析 | 节点 ID 含连字符 `-`，模板正则 `[a-zA-Z0-9_]` 不匹配 | 节点 ID 用 `llm1`/`start`/`answer1`/`end1` 等无连字符命名 |
+| 14 | draft 同步报 `draft_workflow_not_sync` (409) | 二次提交需携带当前 draft 的 `hash` | 先 `GET /workflows/draft` 取 `hash`，再 `POST` 同步 |
+| 15 | start 节点变量校验失败 | 变量 `label` 必须是字符串，不能是 i18n 对象 | `"label": "引导词正文"` |
+| 16 | PowerShell 传中文 JSON 报 `Invalid JSON data` | `Set-Content -Encoding UTF8` 写 BOM，或变量编码问题 | 用 `[System.IO.File]::WriteAllText(path, json, [Text.UTF8Encoding]::new($false))` + curl `--data-binary "@file"` |
 
 ---
 
@@ -220,11 +241,11 @@ curl -X POST 'http://localhost/v1/chat-messages' \
 
 ### 项目 .env（后端配置）
 
-文件路径：`<项目根>/backend/.env.example`（复制为 `.env` 后填入）
+文件路径：`<项目根>/backend/.env.example`（复制为 `.env` 后填入，**已完成**）
 
 ### Dify .env
 
-文件路径：`D:\project\github\dify\dify-1.16.1\docker\.env`
+文件路径：`C:\projects\github\dify\dify-1.16.1\docker\.env`
 默认配置即可，无需修改。
 
 ---
