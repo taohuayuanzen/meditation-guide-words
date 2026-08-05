@@ -1,0 +1,5 @@
+# Shell 脚本固定 LF（避免 Windows CRLF 破坏 shebang）
+*.sh text eol=lf
+
+# Batch 脚本固定 CRLF（cmd.exe 兼容）
+*.bat text eol=crlf
