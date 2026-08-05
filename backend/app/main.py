@@ -4,6 +4,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.db import create_tables, init_db
+from app.routers import audio_tasks, dify_proxy, scripts, settings
 
 
 @asynccontextmanager
@@ -31,3 +32,9 @@ app.add_middleware(
 @app.get("/api/health")
 async def health_check():
     return {"status": "ok"}
+
+
+app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
+app.include_router(scripts.router, prefix="/api/scripts", tags=["scripts"])
+app.include_router(audio_tasks.router, prefix="/api/audio-tasks", tags=["audio-tasks"])
+app.include_router(dify_proxy.router, prefix="/api/dify", tags=["dify"])

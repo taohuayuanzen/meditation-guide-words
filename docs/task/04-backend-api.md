@@ -15,6 +15,37 @@
 
 ---
 
+## 当前进度（2026-08-05 · 已完成）
+
+### 已完成
+
+- [x] 注册 4 个 router（settings / scripts / audio-tasks / dify）
+- [x] 设置 API：GET/POST `/api/settings` + `test-llm`（真实调用 DeepSeek）+ `test-tts`（校验配置，TODO T5）
+- [x] 引导词 API：CRUD + 可选分页（`{items, total}` 结构）
+- [x] 音频任务 API：创建/列表/详情/下载/重试
+- [x] Dify 代理：`/api/dify/script/chat`、`/api/dify/audio/chat`，原样透传 SSE + 错误处理
+- [x] 单元测试 16 个全部通过（内存 SQLite 隔离）
+- [x] Ruff 检查通过
+- [x] curl 冒烟验证：CRUD / Dify 流式透传（194 事件）/ Dify blocking / test-llm 真实调用均正常
+
+### 关键实现决策（已确认）
+
+| 决策点 | 结论 |
+|---|---|
+| Dify SSE 透传 | **原样透传**（`aiter_bytes` 直通，保留 Dify 官方协议） |
+| 代理错误处理 | Dify 非 2xx / 连接失败 → 输出 SSE `{"event":"error",...}`，流式 read 超时无限制 |
+| scripts 分页 | 返回 `{items, total}`，可选 `page`/`page_size`，不传则全量 |
+| test-llm | 真实调用 `{base_url}/chat/completions`；test-tts 留 TODO（T5 TTSService） |
+| 测试隔离 | 内存 SQLite（StaticPool）+ 覆盖 `get_db` 依赖，不污染开发库 |
+
+### 与文档差异 / 附带修改
+
+- `app/config.py`：Settings 增加 `extra="ignore"`（`backend/.env` 含 LLM/Dify 参考键，pydantic-settings 默认 forbid 会报错）；改用 `SettingsConfigDict`
+- Router 使用 `Annotated` 注入 `Depends`/`Query`，规避 Ruff B008
+- `pyproject.toml` 增加 `[tool.pytest.ini_options] asyncio_mode = "auto"`
+
+---
+
 ## 详细步骤
 
 ### 4.1 注册路由
@@ -351,13 +382,13 @@ async def test_create_script(client):
 
 ## 验收标准
 
-- [ ] `/api/health`、`/api/settings`、`/api/scripts`、`/api/audio-tasks` 接口可用
-- [ ] 设置 CRUD 正确持久化到 SQLite
-- [ ] 引导词 CRUD 完整，包含创建、查询、更新、删除
-- [ ] 音频任务可创建、查询、下载（完成后）、重试
-- [ ] `/api/dify/script/chat` 和 `/api/dify/audio/chat` 能正确转发到 Dify 并返回 SSE
-- [ ] 后端单元测试覆盖设置、引导词、音频任务核心接口，测试通过
-- [ ] Ruff 检查无错误
+- [x] `/api/health`、`/api/settings`、`/api/scripts`、`/api/audio-tasks` 接口可用
+- [x] 设置 CRUD 正确持久化到 SQLite
+- [x] 引导词 CRUD 完整，包含创建、查询、更新、删除
+- [x] 音频任务可创建、查询、下载（完成后）、重试
+- [x] `/api/dify/script/chat` 和 `/api/dify/audio/chat` 能正确转发到 Dify 并返回 SSE
+- [x] 后端单元测试覆盖设置、引导词、音频任务核心接口，测试通过
+- [x] Ruff 检查无错误
 
 ---
 
