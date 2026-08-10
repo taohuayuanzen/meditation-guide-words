@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-export type Workspace = 'script' | 'audio';
+export type Workspace = 'script' | 'audio' | 'artifact';
 
 interface AppState {
   currentWorkspace: Workspace;

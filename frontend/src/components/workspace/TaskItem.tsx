@@ -32,10 +32,10 @@ export function TaskItem({ task, script, onRetry }: TaskItemProps) {
   const voicePrompt = task.voice_prompt;
 
   return (
-    <div className="flex flex-col gap-2 rounded-lg border p-3">
+    <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0 flex-1">
-          <div className="font-medium">
+          <div className="font-semibold">
             {t('audio.task')} #{task.id} · {scriptTitle}
           </div>
           <div className="text-sm text-muted-foreground">

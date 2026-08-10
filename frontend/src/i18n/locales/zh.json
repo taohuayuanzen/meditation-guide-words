@@ -10,7 +10,8 @@
   },
   "workspace": {
     "script": "引导词生成",
-    "audio": "音频生成"
+    "audio": "音频生成",
+    "artifact": "产物"
   },
   "chat": {
     "placeholder": "输入你的需求，例如：生成一段 10 分钟睡前放松冥想引导词…",
@@ -62,13 +63,38 @@
     "parseError": "声音描述不清晰，请重试",
     "createError": "创建音频任务失败"
   },
+  "artifact": {
+    "title": "产物",
+    "all": "全部",
+    "audio": "音频",
+    "script": "引导词",
+    "empty": "暂无产物",
+    "download": "下载",
+    "rename": "重命名",
+    "delete": "删除",
+    "confirmDelete": "确定删除「{{name}}」？此操作不可恢复。",
+    "renameTitle": "重命名",
+    "renameHint": "修改产物名称，不包含扩展名",
+    "renamePlaceholder": "请输入新名称",
+    "renameDuplicate": "该名称已存在",
+    "createdAt": "创建于",
+    "refresh": "刷新",
+    "loadFailed": "加载产物失败",
+    "renamed": "已重命名",
+    "renameFailed": "重命名失败",
+    "deleted": "已删除",
+    "deleteFailed": "删除失败",
+    "deleteTitle": "删除产物"
+  },
   "common": {
     "loading": "加载中…",
     "cancel": "取消",
     "optional": "可选",
     "confirm": "确认",
     "discard": "放弃",
-    "unsavedChanges": "有未保存的更改，是否放弃？"
+    "unsavedChanges": "有未保存的更改，是否放弃？",
+    "saving": "保存中…",
+    "deleting": "删除中…"
   },
   "settings": {
     "title": "设置",

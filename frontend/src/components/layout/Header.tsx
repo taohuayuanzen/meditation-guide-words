@@ -1,4 +1,4 @@
-import { FileText, Headphones, Menu, Settings } from 'lucide-react';
+import { Archive, FileText, Headphones, Menu, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,13 +10,20 @@ import { useAppStore } from '@/stores/appStore';
 const ICONS = {
   script: FileText,
   audio: Headphones,
+  artifact: Archive,
+};
+
+const WORKSPACE_TITLE_KEY: Record<keyof typeof ICONS, string> = {
+  script: 'workspace.script',
+  audio: 'workspace.audio',
+  artifact: 'workspace.artifact',
 };
 
 export function Header() {
   const navigate = useNavigate();
   const { currentWorkspace, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   const { t } = useTranslation();
-  const title = currentWorkspace === 'script' ? t('workspace.script') : t('workspace.audio');
+  const title = t(WORKSPACE_TITLE_KEY[currentWorkspace]);
   const Icon = ICONS[currentWorkspace];
 
   return (
@@ -42,7 +49,7 @@ export function Header() {
             </div>
           </SheetContent>
         </Sheet>
-        <Icon className="h-5 w-5 text-muted-foreground md:hidden" />
+        <Icon className="h-5 w-5 text-muted-foreground" />
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
       <Button

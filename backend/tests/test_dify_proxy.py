@@ -45,9 +45,7 @@ async def test_chat_script_uses_env_config_when_db_empty(client, monkeypatch):
         captured["auth"] = request.headers.get("Authorization")
         return httpx.Response(200, content=b"data: ok\n\n")
 
-    request = _make_request(
-        b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}'
-    )
+    request = _make_request(b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}')
     response = await dify_proxy.stream_dify(
         request, "env-script-key", "http://dify.env/v1", transport=httpx.MockTransport(handler)
     )
@@ -79,9 +77,7 @@ async def test_chat_script_prefers_db_config_over_env(client, monkeypatch):
         captured["auth"] = request.headers.get("Authorization")
         return httpx.Response(200, content=b"data: ok\n\n")
 
-    request = _make_request(
-        b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}'
-    )
+    request = _make_request(b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}')
     response = await dify_proxy.stream_dify(
         request, "db-script-key", "http://dify.db/v1", transport=httpx.MockTransport(handler)
     )
@@ -95,9 +91,7 @@ async def test_stream_dify_returns_error_event_on_dify_failure():
     def handler(request: httpx.Request) -> httpx.Response:
         return httpx.Response(401, text="Unauthorized")
 
-    request = _make_request(
-        b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}'
-    )
+    request = _make_request(b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}')
     response = await dify_proxy.stream_dify(
         request, "bad-key", "http://dify.test/v1", transport=httpx.MockTransport(handler)
     )
@@ -110,9 +104,7 @@ async def test_stream_dify_returns_error_event_on_connection_error():
     def handler(request: httpx.Request) -> httpx.Response:
         raise httpx.ConnectError("Connection refused")
 
-    request = _make_request(
-        b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}'
-    )
+    request = _make_request(b'{"inputs":{},"query":"hi","response_mode":"streaming","user":"u"}')
     response = await dify_proxy.stream_dify(
         request, "key", "http://dify.test/v1", transport=httpx.MockTransport(handler)
     )

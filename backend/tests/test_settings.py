@@ -54,9 +54,7 @@ async def test_test_tts_missing_key(client):
 
 
 async def test_test_tts_missing_voice_id(client):
-    resp = await client.post(
-        "/api/settings/test-tts", json={"provider": "aliyun", "api_key": "k"}
-    )
+    resp = await client.post("/api/settings/test-tts", json={"provider": "aliyun", "api_key": "k"})
     assert resp.status_code == 400
     assert "音色" in resp.json()["detail"]
 

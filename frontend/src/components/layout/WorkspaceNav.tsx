@@ -1,4 +1,4 @@
-import { FileText, Headphones } from 'lucide-react';
+import { Archive, FileText, Headphones } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ interface WorkspaceNavProps {
 const ITEMS: { value: Workspace; icon: typeof FileText; labelKey: string }[] = [
   { value: 'script', icon: FileText, labelKey: 'workspace.script' },
   { value: 'audio', icon: Headphones, labelKey: 'workspace.audio' },
+  { value: 'artifact', icon: Archive, labelKey: 'workspace.artifact' },
 ];
 
 export function WorkspaceNav({ collapsed, onNavigate }: WorkspaceNavProps) {
@@ -31,7 +32,9 @@ export function WorkspaceNav({ collapsed, onNavigate }: WorkspaceNavProps) {
           <Button
             key={value}
             variant={active ? 'default' : 'ghost'}
-            className="justify-start"
+            className={`w-full justify-start gap-3 ${active ? 'font-semibold' : ''} ${
+              collapsed ? 'px-2' : ''
+            }`}
             onClick={() => handleClick(value)}
             aria-label={t(labelKey)}
           >

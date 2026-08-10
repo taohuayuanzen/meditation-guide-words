@@ -50,9 +50,7 @@ class AliyunTTS(TTSBase):
             output_format,
         )
         if self.model.startswith("sambert"):
-            return await self._synthesize_sambert(
-                text, voice_id, speed, volume, output_format
-            )
+            return await self._synthesize_sambert(text, voice_id, speed, volume, output_format)
         return await self._synthesize_qwen(
             text, voice_id, speed, volume, output_format, instruction
         )
@@ -89,9 +87,7 @@ class AliyunTTS(TTSBase):
         response.raise_for_status()
         return response.content
 
-    async def _synthesize_qwen(
-        self, text, voice_id, speed, volume, output_format, instruction
-    ):
+    async def _synthesize_qwen(self, text, voice_id, speed, volume, output_format, instruction):
         url = f"{self.base_url}/services/audio/tts/SpeechSynthesizer"
         input_payload: dict = {
             "text": text,

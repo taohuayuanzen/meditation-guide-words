@@ -164,58 +164,62 @@ export function ScriptWorkspace() {
   const isAssistantStreaming = isStreaming && lastAssistant?.role === 'assistant';
 
   return (
-    <div className="flex h-full flex-col p-4">
+    <div className="flex h-full flex-col bg-background">
       {error ? (
-        <Alert variant="destructive" className="mb-3">
+        <Alert variant="destructive" className="mx-auto mt-4 max-w-3xl">
           <AlertCircle className="h-4 w-4" />
           <AlertTitle>{errorTitle || t('chat.streamError')}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}
 
-      <div className="mb-4 flex-1 overflow-y-auto rounded-lg border p-4">
-        {messages.length === 0 ? (
-          <ScriptEmptyState onSelect={setInput} />
-        ) : (
-          messages.map((msg) => (
-            <ChatMessage
-              key={msg.id}
-              role={msg.role}
-              content={msg.content}
-              isStreaming={
-                isAssistantStreaming && msg.id === lastAssistant?.id && msg.role === 'assistant'
-              }
-              onSave={
-                msg.role === 'assistant' ? () => void handleSaveMessage(msg.content) : undefined
-              }
-            />
-          ))
-        )}
-        <div ref={bottomRef} />
+      <div className="min-h-0 flex-1 overflow-y-auto px-4 py-6">
+        <div className="mx-auto min-h-full max-w-3xl">
+          {messages.length === 0 ? (
+            <ScriptEmptyState onSelect={setInput} />
+          ) : (
+            messages.map((msg) => (
+              <ChatMessage
+                key={msg.id}
+                role={msg.role}
+                content={msg.content}
+                isStreaming={
+                  isAssistantStreaming && msg.id === lastAssistant?.id && msg.role === 'assistant'
+                }
+                onSave={
+                  msg.role === 'assistant' ? () => void handleSaveMessage(msg.content) : undefined
+                }
+              />
+            ))
+          )}
+          <div ref={bottomRef} />
+        </div>
       </div>
 
-      <div className="flex gap-2">
-        <AutoResizeTextarea
-          value={input}
-          onChange={(e) => setInput(e.target.value)}
-          onKeyDown={handleKeyDown}
-          placeholder={t('chat.placeholder')}
-          className="flex-1"
-          minRows={2}
-          maxRows={6}
-          disabled={isStreaming}
-        />
-        {isStreaming ? (
-          <Button variant="destructive" onClick={handleStop}>
-            <Square className="h-4 w-4" />
-            <span className="ml-2 hidden sm:inline">{t('chat.stop')}</span>
-          </Button>
-        ) : (
-          <Button onClick={() => void handleSend()} disabled={input.trim() === ''}>
-            <Send className="h-4 w-4" />
-            <span className="ml-2 hidden sm:inline">{t('chat.send')}</span>
-          </Button>
-        )}
+      <div className="border-t bg-background px-4 py-4">
+        <div className="mx-auto flex max-w-3xl items-end gap-3">
+          <AutoResizeTextarea
+            value={input}
+            onChange={(e) => setInput(e.target.value)}
+            onKeyDown={handleKeyDown}
+            placeholder={t('chat.placeholder')}
+            className="flex-1"
+            minRows={2}
+            maxRows={6}
+            disabled={isStreaming}
+          />
+          {isStreaming ? (
+            <Button variant="destructive" onClick={handleStop} className="shrink-0">
+              <Square className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('chat.stop')}</span>
+            </Button>
+          ) : (
+            <Button onClick={() => void handleSend()} disabled={input.trim() === ''} className="shrink-0">
+              <Send className="h-4 w-4" />
+              <span className="hidden sm:inline">{t('chat.send')}</span>
+            </Button>
+          )}
+        </div>
       </div>
     </div>
   );

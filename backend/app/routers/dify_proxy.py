@@ -50,8 +50,7 @@ async def get_dify_config(db: AsyncSession, app_key_name: str) -> dict:
     audio_app_key = db_audio_key or env_audio_key
 
     logger.debug(
-        "[DifyConfig] resolved base_url=%s db_script=%s env_script=%s "
-        "db_audio=%s env_audio=%s",
+        "[DifyConfig] resolved base_url=%s db_script=%s env_script=%s db_audio=%s env_audio=%s",
         base_url,
         bool(db_script_key),
         bool(env_script_key),

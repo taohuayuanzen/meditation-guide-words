@@ -35,9 +35,7 @@ async def test_retry_resets_retry_count_and_file(client, db_session):
     task_id = resp.json()["id"]
 
     async with db_session() as db:
-        task = (
-            await db.execute(select(AudioTask).where(AudioTask.id == task_id))
-        ).scalar_one()
+        task = (await db.execute(select(AudioTask).where(AudioTask.id == task_id))).scalar_one()
         task.status = "failed"
         task.retry_count = 2
         task.error_msg = "boom"
