@@ -242,7 +242,9 @@ async def test_aliyun_instruction_truncates_to_100_chars():
     await service.synthesize("hi", "longanlingxin", instruction=long_instruction)
     sent = captured["body"]["input"]["instruction"]
     assert len(sent) < len(long_instruction)
-    char_count = sum(2 if __import__("unicodedata").category(ch).startswith("Lo") else 1 for ch in sent)
+    char_count = sum(
+        2 if __import__("unicodedata").category(ch).startswith("Lo") else 1 for ch in sent
+    )
     assert char_count <= 100
 
 

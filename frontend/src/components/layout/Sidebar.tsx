@@ -26,12 +26,12 @@ export function Sidebar() {
 
   return (
     <aside
-      className={`hidden h-screen shrink-0 flex-col border-r p-4 transition-all duration-200 md:flex ${
+      className={`hidden h-screen shrink-0 flex-col border-r border-sidebar-border bg-sidebar p-4 transition-all duration-200 md:flex ${
         sidebarCollapsed ? 'w-20' : 'w-64'
       }`}
     >
       <h1
-        className={`mb-8 text-xl font-bold transition-opacity ${
+        className={`mb-8 px-2 text-lg font-bold transition-opacity ${
           sidebarCollapsed ? 'truncate text-center opacity-80' : ''
         }`}
         title={t('app.name')}

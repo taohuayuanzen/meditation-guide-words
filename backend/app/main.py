@@ -5,7 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import setup_logging
 from app.db import create_tables, init_db
-from app.routers import audio_tasks, dify_proxy, scripts, settings
+from app.routers import artifacts, audio_tasks, dify_proxy, scripts, settings
 
 setup_logging()
 
@@ -40,4 +40,5 @@ async def health_check():
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 app.include_router(scripts.router, prefix="/api/scripts", tags=["scripts"])
 app.include_router(audio_tasks.router, prefix="/api/audio-tasks", tags=["audio-tasks"])
+app.include_router(artifacts.router, prefix="/api/artifacts", tags=["artifacts"])
 app.include_router(dify_proxy.router, prefix="/api/dify", tags=["dify"])

@@ -73,9 +73,7 @@ export function TTSSettings({ value, errors, onChange }: TTSSettingsProps) {
 
   const isPresetVoice = currentVoices.some((v) => v.value === value.voice_id);
   const isCustomVoice = !isPresetVoice && isAliyun;
-  const [customVoice, setCustomVoice] = useState(
-    isPresetVoice || !isAliyun ? '' : value.voice_id
-  );
+  const [customVoice, setCustomVoice] = useState(isPresetVoice || !isAliyun ? '' : value.voice_id);
 
   useEffect(() => {
     if (!isAliyun) {

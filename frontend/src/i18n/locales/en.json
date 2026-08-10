@@ -10,7 +10,8 @@
   },
   "workspace": {
     "script": "Script Generator",
-    "audio": "Audio Generator"
+    "audio": "Audio Generator",
+    "artifact": "Artifacts"
   },
   "chat": {
     "placeholder": "Describe your needs, e.g. generate a 10-minute bedtime relaxation meditation script…",
@@ -62,13 +63,38 @@
     "parseError": "Voice description is unclear, please try again",
     "createError": "Failed to create audio task"
   },
+  "artifact": {
+    "title": "Artifacts",
+    "all": "All",
+    "audio": "Audio",
+    "script": "Script",
+    "empty": "No artifacts yet",
+    "download": "Download",
+    "rename": "Rename",
+    "delete": "Delete",
+    "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "renameTitle": "Rename",
+    "renameHint": "Rename the artifact without the file extension",
+    "renamePlaceholder": "Enter a new name",
+    "renameDuplicate": "This name already exists",
+    "createdAt": "Created at",
+    "refresh": "Refresh",
+    "loadFailed": "Failed to load artifacts",
+    "renamed": "Renamed",
+    "renameFailed": "Failed to rename",
+    "deleted": "Deleted",
+    "deleteFailed": "Failed to delete",
+    "deleteTitle": "Delete Artifact"
+  },
   "common": {
     "loading": "Loading…",
     "cancel": "Cancel",
     "optional": "Optional",
     "confirm": "Confirm",
     "discard": "Discard",
-    "unsavedChanges": "You have unsaved changes. Discard them?"
+    "unsavedChanges": "You have unsaved changes. Discard them?",
+    "saving": "Saving…",
+    "deleting": "Deleting…"
   },
   "settings": {
     "title": "Settings",

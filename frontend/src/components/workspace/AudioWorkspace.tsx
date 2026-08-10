@@ -115,8 +115,8 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
     : null;
 
   return (
-    <div className="flex h-full flex-col gap-4 overflow-hidden p-4">
-      <div>
+    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-6 overflow-hidden p-6">
+      <div className="shrink-0">
         <label htmlFor="script-select" className="mb-1 block text-sm font-medium">
           {t('audio.selectScript')}
         </label>
@@ -152,7 +152,7 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
         </div>
       ) : null}
 
-      <div className="flex shrink-0 gap-2">
+      <div className="flex shrink-0 items-stretch gap-3">
         <Textarea
           value={voicePrompt}
           onChange={(e) => setVoicePrompt(e.target.value)}
@@ -169,11 +169,11 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
         </Button>
       </div>
 
-      {error ? <p className="shrink-0 text-sm text-destructive">{error}</p> : null}
+      {error ? <p className="shrink-0 text-sm font-medium text-destructive">{error}</p> : null}
 
-      <ScrollArea className="flex-1 rounded-lg border p-4">
-        <div className="mb-2 flex items-center justify-between">
-          <h3 className="font-medium">{t('audio.taskList')}</h3>
+      <ScrollArea className="flex-1 rounded-2xl border bg-card p-4">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="text-lg font-semibold">{t('audio.taskList')}</h3>
           <div className="flex items-center gap-2">
             {secondsSinceUpdate !== null ? (
               <span className="text-xs text-muted-foreground">
@@ -183,7 +183,7 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
             <Button
               variant="ghost"
               size="icon"
-              className="h-7 w-7"
+              className="h-9 w-9"
               onClick={() => void refreshTasks()}
               aria-label={t('audio.refresh')}
             >
@@ -191,7 +191,7 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
             </Button>
           </div>
         </div>
-        <div className="space-y-2">
+        <div className="space-y-3">
           {tasks.length === 0 ? (
             <p className="text-sm text-muted-foreground">{t('audio.emptyTasks')}</p>
           ) : (

@@ -26,8 +26,8 @@ export function ChatMessage({ role, content, isStreaming, onSave }: ChatMessageP
   return (
     <div className={`group relative mb-4 flex w-full ${isUser ? 'justify-end' : 'justify-start'}`}>
       <div
-        className={`max-w-[80%] whitespace-pre-wrap rounded-lg p-3 ${
-          isUser ? 'bg-primary text-primary-foreground' : 'bg-muted text-muted-foreground'
+        className={`max-w-[80%] whitespace-pre-wrap rounded-2xl px-4 py-3 ${
+          isUser ? 'bg-primary text-primary-foreground' : 'bg-secondary text-foreground'
         }`}
       >
         {content}
@@ -38,7 +38,7 @@ export function ChatMessage({ role, content, isStreaming, onSave }: ChatMessageP
 
       {!isUser && onSave ? (
         <TooltipProvider delayDuration={200}>
-          <div className="absolute -bottom-2 right-2 flex gap-1 rounded-md border bg-background p-1 shadow-sm opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
+          <div className="absolute -bottom-2 right-2 flex gap-1 rounded-full border bg-background p-1 opacity-100 transition-opacity md:opacity-0 md:group-hover:opacity-100">
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={handleCopy}>

@@ -13,12 +13,12 @@ export function ScriptEmptyState({ onSelect }: ScriptEmptyStateProps) {
   const examples = [t('chat.emptyExample1'), t('chat.emptyExample2'), t('chat.emptyExample3')];
 
   return (
-    <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-      <div className="rounded-full bg-primary/10 p-3">
-        <Sparkles className="h-6 w-6 text-primary" />
+    <div className="flex h-full flex-col items-center justify-center gap-5 p-6 text-center">
+      <div className="rounded-full bg-primary p-4 text-primary-foreground">
+        <Sparkles className="h-7 w-7" />
       </div>
       <div>
-        <p className="font-medium">{t('chat.emptyTitle')}</p>
+        <p className="text-xl font-semibold">{t('chat.emptyTitle')}</p>
         <p className="text-sm text-muted-foreground">{t('chat.emptyHint')}</p>
       </div>
       <div className="flex max-w-md flex-wrap justify-center gap-2">

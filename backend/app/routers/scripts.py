@@ -1,12 +1,15 @@
+import os
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.config import settings
 from app.db import get_db
 from app.models.script import Script
 from app.schemas.script import ScriptCreate, ScriptListResponse, ScriptResponse
+from app.utils.file_utils import ensure_dir, get_script_output_dir, sanitize_filename
 
 router = APIRouter()
 
@@ -21,6 +24,29 @@ async def _get_script_or_404(db: AsyncSession, script_id: int) -> Script:
     if not script:
         raise HTTPException(status_code=404, detail="Script not found")
     return script
+
+
+def _script_file_path(script: Script) -> str:
+    output_dir = get_script_output_dir(settings.audio_output_dir)
+    safe_title = sanitize_filename(script.title)
+    return os.path.join(output_dir, f"{safe_title}_{script.id}.md")
+
+
+def _write_script_file(script: Script) -> str:
+    file_path = _script_file_path(script)
+    ensure_dir(os.path.dirname(file_path))
+    content = f"""# {script.title}
+
+创建时间：{script.created_at}
+会话 ID：{script.session_id or "无"}
+
+---
+
+{script.content}
+"""
+    with open(file_path, "w", encoding="utf-8") as f:
+        f.write(content)
+    return file_path
 
 
 @router.get("", response_model=ScriptListResponse)
@@ -39,6 +65,7 @@ async def create_script(payload: ScriptCreate, db: DbSession):
     db.add(script)
     await db.commit()
     await db.refresh(script)
+    _write_script_file(script)
     return script
 
 
