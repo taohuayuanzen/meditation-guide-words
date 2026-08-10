@@ -15,5 +15,7 @@ def get_tts_service(config: dict):
         return AliyunTTS(
             api_key=config.get("api_key", ""),
             secret_key=config.get("secret_key", ""),
+            model=config.get("model", "qwen-audio-3.0-tts-plus"),
+            base_url=config.get("base_url", "https://dashscope.aliyuncs.com/api/v1"),
         )
     raise ValueError(f"Unsupported TTS provider: {provider}")

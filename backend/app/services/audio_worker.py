@@ -1,16 +1,20 @@
 import asyncio
+import logging
 import os
 
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
-from app.config import settings
+from app.config import settings, setup_logging
 from app.db import AsyncSessionLocal
 from app.models.audio_task import AudioTask
 from app.models.script import Script
 from app.models.setting import Setting
 from app.services.tts_factory import get_tts_service
 from app.utils.time_utils import utc_now
+
+setup_logging()
+logger = logging.getLogger(__name__)
 
 MAX_TEXT_LENGTH = 5000
 MAX_RETRIES = 1
@@ -47,13 +51,40 @@ async def process_task(task_id: int, *, session_factory: async_sessionmaker = As
 
             tts_params = task.tts_params or {}
             tts_config = setting.tts_config or {}
-            voice_id = tts_params.get("voice_id") or tts_config.get("voice_id") or ""
+            provider = tts_config.get("provider", "volcano")
+            voice_id = tts_params.get("voice_id") or ""
+            # 任务级 voice_id 若与当前 provider 的音色命名空间不符（如 Dify 返回的
+            # 描述性占位符 female_gentle_01），则回退到全局配置，避免无效音色导致
+            # 阿里云/火山引擎调用失败。
+            if provider == "aliyun" and voice_id:
+                if not (
+                    voice_id.startswith("long")
+                    or voice_id.startswith("loong")
+                    or voice_id.startswith("sambert")
+                ):
+                    voice_id = ""
+            voice_id = voice_id or tts_config.get("voice_id") or ""
             if not voice_id:
                 raise ValueError("未配置音色（voice_id）")
             speed = float(tts_params.get("speed", tts_config.get("speed", 1.0)))
             volume = float(tts_params.get("volume", tts_config.get("volume", 1.0)))
             output_format = (
                 tts_params.get("output_format") or tts_config.get("output_format") or "mp3"
+            )
+
+            logger.info(
+                "[AudioWorker] task=%s script=%s provider=%s model=%s voice=%s "
+                "text_len=%s speed=%s volume=%s format=%s instruction_len=%s",
+                task.id,
+                script.id,
+                tts_config.get("provider"),
+                tts_config.get("model"),
+                voice_id,
+                len(script.content),
+                speed,
+                volume,
+                output_format,
+                len(task.voice_prompt) if isinstance(task.voice_prompt, str) else 0,
             )
 
             service = get_tts_service(tts_config)
@@ -63,6 +94,7 @@ async def process_task(task_id: int, *, session_factory: async_sessionmaker = As
                 speed=speed,
                 volume=volume,
                 output_format=output_format,
+                instruction=task.voice_prompt,
             )
 
             general_config = setting.general_config or {}
@@ -77,6 +109,12 @@ async def process_task(task_id: int, *, session_factory: async_sessionmaker = As
             task.completed_at = utc_now()
             task.error_msg = None
         except Exception as e:
+            logger.exception(
+                "[AudioWorker] task=%s failed: %s (retry_count=%s)",
+                task.id,
+                e,
+                task.retry_count,
+            )
             task.error_msg = str(e)
             if task.retry_count < MAX_RETRIES:
                 task.retry_count += 1

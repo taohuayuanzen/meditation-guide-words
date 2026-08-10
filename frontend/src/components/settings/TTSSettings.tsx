@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { TestButton } from '@/components/settings/TestButton';
@@ -27,8 +27,99 @@ const PROVIDERS = [
   { value: 'aliyun', labelKey: 'settings.providerAliyun' },
 ];
 
+const ALIYUN_MODELS = [
+  { value: 'qwen-audio-3.0-tts-plus', labelKey: 'settings.modelQwenAudioPlus' },
+  { value: 'qwen-audio-3.0-tts-flash', labelKey: 'settings.modelQwenAudioFlash' },
+  { value: 'cosyvoice-v3-flash', labelKey: 'settings.modelCosyVoiceFlash' },
+];
+
+const DEFAULT_ALIYUN_BASE_URL = 'https://dashscope.aliyuncs.com/api/v1';
+
+const ALIYUN_VOICES: Record<string, { value: string; labelKey: string }[]> = {
+  'qwen-audio-3.0-tts-plus': [
+    { value: 'longanlingxin', labelKey: 'settings.voiceLonganlingxin' },
+    { value: 'longanlufeng', labelKey: 'settings.voiceLonganlufeng' },
+  ],
+  'qwen-audio-3.0-tts-flash': [
+    { value: 'longanfengyue', labelKey: 'settings.voiceLonganfengyue' },
+    { value: 'longanyuanfei', labelKey: 'settings.voiceLonganyuanfei' },
+    { value: 'longanlingxi', labelKey: 'settings.voiceLonganlingxi' },
+    { value: 'longanxiaoxin', labelKey: 'settings.voiceLonganxiaoxin' },
+    { value: 'longanhuan_v3.6', labelKey: 'settings.voiceLonganhuan' },
+    { value: 'longjielidou_v3.6', labelKey: 'settings.voiceLongjielidou' },
+    { value: 'longpaopao_v3.6', labelKey: 'settings.voiceLongpaopao' },
+    { value: 'longhuohuo_v3.6', labelKey: 'settings.voiceLonghuohuo' },
+    { value: 'longchuanshu_v3.6', labelKey: 'settings.voiceLongchuanshu' },
+    { value: 'loongmary', labelKey: 'settings.voiceLoongmary' },
+    { value: 'loongeva_v3.6', labelKey: 'settings.voiceLoongeva' },
+    { value: 'loongjohn', labelKey: 'settings.voiceLoongjohn' },
+  ],
+  'cosyvoice-v3-flash': [
+    { value: 'longanyang', labelKey: 'settings.voiceLonganyang' },
+    { value: 'longanhuan_v3', labelKey: 'settings.voiceLonganhuanV3' },
+  ],
+};
+
+const CUSTOM_VOICE = 'custom';
+
 export function TTSSettings({ value, errors, onChange }: TTSSettingsProps) {
   const { t } = useTranslation();
+
+  const isAliyun = value.provider === 'aliyun';
+
+  const currentVoices = useMemo(() => {
+    return ALIYUN_VOICES[value.model] ?? [];
+  }, [value.model]);
+
+  const isPresetVoice = currentVoices.some((v) => v.value === value.voice_id);
+  const isCustomVoice = !isPresetVoice && isAliyun;
+  const [customVoice, setCustomVoice] = useState(
+    isPresetVoice || !isAliyun ? '' : value.voice_id
+  );
+
+  useEffect(() => {
+    if (!isAliyun) {
+      setCustomVoice('');
+      return;
+    }
+    if (!isPresetVoice && value.voice_id !== CUSTOM_VOICE) {
+      setCustomVoice(value.voice_id);
+    }
+  }, [isAliyun, isPresetVoice, value.voice_id]);
+
+  const handleProviderChange = (provider: string) => {
+    const patch: Partial<TTSConfig> = { provider };
+    if (provider === 'aliyun') {
+      patch.model = value.model || 'qwen-audio-3.0-tts-plus';
+      patch.base_url = value.base_url || DEFAULT_ALIYUN_BASE_URL;
+      patch.voice_id = value.voice_id || ALIYUN_VOICES['qwen-audio-3.0-tts-plus'][0].value;
+      patch.secret_key = '';
+      patch.appid = '';
+      patch.cluster = 'volcano_tts';
+    }
+    onChange(patch);
+  };
+
+  const handleModelChange = (model: string) => {
+    const voices = ALIYUN_VOICES[model] ?? [];
+    const firstVoice = voices[0]?.value ?? '';
+    const newVoice = voices.some((v) => v.value === value.voice_id) ? value.voice_id : firstVoice;
+    onChange({ model, voice_id: newVoice });
+  };
+
+  const handleVoiceChange = (voice: string) => {
+    if (voice === CUSTOM_VOICE) {
+      onChange({ voice_id: customVoice || CUSTOM_VOICE });
+    } else {
+      onChange({ voice_id: voice });
+    }
+  };
+
+  const handleCustomVoiceChange = (text: string) => {
+    setCustomVoice(text);
+    onChange({ voice_id: text });
+  };
+
   const [testState, setTestState] = useState<TestState>('idle');
   const [testMessage, setTestMessage] = useState('');
 
@@ -56,7 +147,7 @@ export function TTSSettings({ value, errors, onChange }: TTSSettingsProps) {
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tts-provider">{t('settings.provider')}</Label>
-          <Select value={value.provider} onValueChange={(v) => onChange({ provider: v })}>
+          <Select value={value.provider} onValueChange={handleProviderChange}>
             <SelectTrigger id="tts-provider">
               <SelectValue />
             </SelectTrigger>
@@ -69,16 +160,63 @@ export function TTSSettings({ value, errors, onChange }: TTSSettingsProps) {
             </SelectContent>
           </Select>
         </div>
+        {isAliyun ? (
+          <div className="space-y-2">
+            <Label htmlFor="tts-model">{t('settings.model')}</Label>
+            <Select value={value.model} onValueChange={handleModelChange}>
+              <SelectTrigger id="tts-model">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {ALIYUN_MODELS.map((m) => (
+                  <SelectItem key={m.value} value={m.value}>
+                    {t(m.labelKey)}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : null}
+        {!isAliyun ? (
+          <div className="space-y-2">
+            <Label htmlFor="tts-voice-id">{t('settings.voiceId')}</Label>
+            <Input
+              id="tts-voice-id"
+              value={value.voice_id}
+              onChange={(e) => onChange({ voice_id: e.target.value })}
+              placeholder="BV001_streaming"
+            />
+          </div>
+        ) : null}
+      </div>
+      {isAliyun ? (
         <div className="space-y-2">
           <Label htmlFor="tts-voice-id">{t('settings.voiceId')}</Label>
-          <Input
-            id="tts-voice-id"
-            value={value.voice_id}
-            onChange={(e) => onChange({ voice_id: e.target.value })}
-            placeholder="BV001_streaming / sambert-zhichu-v1"
-          />
+          <Select
+            value={isCustomVoice ? CUSTOM_VOICE : value.voice_id}
+            onValueChange={handleVoiceChange}
+          >
+            <SelectTrigger id="tts-voice-id">
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent>
+              {currentVoices.map((v) => (
+                <SelectItem key={v.value} value={v.value}>
+                  {t(v.labelKey)}
+                </SelectItem>
+              ))}
+              <SelectItem value={CUSTOM_VOICE}>{t('settings.voiceCustom')}</SelectItem>
+            </SelectContent>
+          </Select>
+          {isCustomVoice ? (
+            <Input
+              value={customVoice}
+              onChange={(e) => handleCustomVoiceChange(e.target.value)}
+              placeholder={t('settings.voiceCustomPlaceholder')}
+            />
+          ) : null}
         </div>
-      </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tts-api-key">{t('settings.apiKey')}</Label>
@@ -88,42 +226,58 @@ export function TTSSettings({ value, errors, onChange }: TTSSettingsProps) {
             onChange={(e) => onChange({ api_key: e.target.value })}
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="tts-secret-key">{t('settings.secretKey')}</Label>
-          <PasswordInput
-            id="tts-secret-key"
-            value={value.secret_key}
-            onChange={(e) => onChange({ secret_key: e.target.value })}
-          />
-        </div>
+        {!isAliyun ? (
+          <div className="space-y-2">
+            <Label htmlFor="tts-secret-key">{t('settings.secretKey')}</Label>
+            <PasswordInput
+              id="tts-secret-key"
+              value={value.secret_key}
+              onChange={(e) => onChange({ secret_key: e.target.value })}
+            />
+          </div>
+        ) : null}
       </div>
-      <div className="grid grid-cols-2 gap-4">
-        <div className="space-y-2">
-          <Label htmlFor="tts-appid">{t('settings.appid')}</Label>
-          <Input
-            id="tts-appid"
-            value={value.appid}
-            onChange={(e) => onChange({ appid: e.target.value })}
-            aria-invalid={!!errors?.appid}
-          />
-          {fieldError('appid') ? (
-            <p className="text-xs text-destructive">{fieldError('appid')}</p>
-          ) : null}
+      {!isAliyun ? (
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label htmlFor="tts-appid">{t('settings.appid')}</Label>
+            <Input
+              id="tts-appid"
+              value={value.appid}
+              onChange={(e) => onChange({ appid: e.target.value })}
+              aria-invalid={!!errors?.appid}
+            />
+            {fieldError('appid') ? (
+              <p className="text-xs text-destructive">{fieldError('appid')}</p>
+            ) : null}
+          </div>
+          <div className="space-y-2">
+            <Label htmlFor="tts-cluster">{t('settings.cluster')}</Label>
+            <Input
+              id="tts-cluster"
+              value={value.cluster}
+              onChange={(e) => onChange({ cluster: e.target.value })}
+              placeholder="volcano_tts"
+              aria-invalid={!!errors?.cluster}
+            />
+            {fieldError('cluster') ? (
+              <p className="text-xs text-destructive">{fieldError('cluster')}</p>
+            ) : null}
+          </div>
         </div>
+      ) : null}
+      {isAliyun ? (
         <div className="space-y-2">
-          <Label htmlFor="tts-cluster">{t('settings.cluster')}</Label>
+          <Label htmlFor="tts-base-url">{t('settings.baseUrl')}</Label>
           <Input
-            id="tts-cluster"
-            value={value.cluster}
-            onChange={(e) => onChange({ cluster: e.target.value })}
-            placeholder="volcano_tts"
-            aria-invalid={!!errors?.cluster}
+            id="tts-base-url"
+            value={value.base_url || DEFAULT_ALIYUN_BASE_URL}
+            disabled
+            readOnly
           />
-          {fieldError('cluster') ? (
-            <p className="text-xs text-destructive">{fieldError('cluster')}</p>
-          ) : null}
+          <p className="text-xs text-muted-foreground">{t('settings.baseUrlReadonlyHint')}</p>
         </div>
-      </div>
+      ) : null}
       <div className="grid grid-cols-2 gap-4">
         <div className="space-y-2">
           <Label htmlFor="tts-speed">

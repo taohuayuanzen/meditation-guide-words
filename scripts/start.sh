@@ -38,7 +38,8 @@ else
   fi
 fi
 
-# 启动后端
+# 启动后端 / Worker（默认开启 DEBUG 日志，便于排查 TTS 等问题）
+export LOG_LEVEL=DEBUG
 cd "$ROOT/backend"
 uv run uvicorn app.main:app --reload --port 8000 &
 BACKEND_PID=$!

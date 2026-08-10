@@ -35,9 +35,10 @@ if errorlevel 1 (
   echo Dify 已在运行。
 )
 
-:: 启动后端 / Worker / 前端
-start "Backend" cmd /c "cd /d %ROOT%\backend && uv run uvicorn app.main:app --reload --port 8000"
-start "Worker" cmd /c "cd /d %ROOT%\backend && uv run python -m app.services.audio_worker"
+:: 启动后端 / Worker / 前端（默认开启 DEBUG 日志，便于排查 TTS 等问题）
+set LOG_LEVEL=DEBUG
+start "Backend" cmd /c "cd /d %ROOT%\backend && set LOG_LEVEL=DEBUG && uv run uvicorn app.main:app --reload --port 8000"
+start "Worker" cmd /c "cd /d %ROOT%\backend && set LOG_LEVEL=DEBUG && uv run python -m app.services.audio_worker"
 start "Frontend" cmd /c "cd /d %ROOT%\frontend && npm run dev"
 
 echo.

@@ -20,6 +20,8 @@ class TTSConfig(BaseModel):
     speed: float = Field(default=1.0, ge=0.5, le=2)
     volume: float = Field(default=1.0, ge=0, le=2)
     output_format: str = "mp3"
+    model: str = "qwen-audio-3.0-tts-plus"
+    base_url: str = "https://dashscope.aliyuncs.com/api/v1"
 
 
 class DifyConfig(BaseModel):

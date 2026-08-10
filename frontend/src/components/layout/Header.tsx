@@ -1,7 +1,7 @@
-import { FileText, Headphones, Menu } from 'lucide-react';
+import { FileText, Headphones, Menu, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { useNavigate } from 'react-router-dom';
 
-import { SettingsDialog } from '@/components/settings/SettingsDialog';
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { WorkspaceNav } from '@/components/layout/WorkspaceNav';
@@ -13,6 +13,7 @@ const ICONS = {
 };
 
 export function Header() {
+  const navigate = useNavigate();
   const { currentWorkspace, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   const { t } = useTranslation();
   const title = currentWorkspace === 'script' ? t('workspace.script') : t('workspace.audio');
@@ -44,7 +45,14 @@ export function Header() {
         <Icon className="h-5 w-5 text-muted-foreground md:hidden" />
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
-      <SettingsDialog />
+      <Button
+        variant="ghost"
+        size="icon"
+        aria-label={t('settings.title')}
+        onClick={() => navigate('/settings')}
+      >
+        <Settings className="h-5 w-5" />
+      </Button>
     </header>
   );
 }

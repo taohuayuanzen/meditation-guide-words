@@ -3,8 +3,11 @@ from contextlib import asynccontextmanager
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
+from app.config import setup_logging
 from app.db import create_tables, init_db
 from app.routers import audio_tasks, dify_proxy, scripts, settings
+
+setup_logging()
 
 
 @asynccontextmanager

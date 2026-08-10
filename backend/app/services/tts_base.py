@@ -10,6 +10,7 @@ class TTSBase(ABC):
         speed: float = 1.0,
         volume: float = 1.0,
         output_format: str = "mp3",
+        instruction: str | None = None,
     ) -> bytes:
         """返回音频二进制数据"""
         pass

@@ -46,6 +46,8 @@ export interface TTSConfig {
   speed: number;
   volume: number;
   output_format: string;
+  model: string;
+  base_url: string;
 }
 
 export interface DifyConfig {

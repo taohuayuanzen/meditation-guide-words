@@ -26,9 +26,28 @@ export function ScriptWorkspace() {
   const [isStreaming, setIsStreaming] = useState(false);
   const [conversationId, setConversationId] = useState('');
   const [error, setError] = useState('');
+  const [errorTitle, setErrorTitle] = useState('');
   const bottomRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
+
+  const getErrorTitle = (detail: string) => {
+    if (detail.includes('Failed to fetch') || detail.includes('NetworkError')) {
+      return t('chat.backendUnreachable');
+    }
+    if (detail.includes('Dify 配置未完成') || detail.toLowerCase().includes('configuration')) {
+      return t('chat.difyConfigError');
+    }
+    if (detail.includes('Dify 连接失败') || detail.includes('Dify request failed')) {
+      return t('chat.difyConnectionError');
+    }
+    return t('chat.streamError');
+  };
+
+  const setChatError = (detail: string) => {
+    setError(detail);
+    setErrorTitle(getErrorTitle(detail));
+  };
 
   const nextId = () => {
     idRef.current += 1;
@@ -55,6 +74,7 @@ export function ScriptWorkspace() {
     if (!content || isStreaming) return;
 
     setError('');
+    setErrorTitle('');
     setMessages((prev) => [...prev, { id: nextId(), role: 'user', content }]);
     setInput('');
     setIsStreaming(true);
@@ -94,7 +114,7 @@ export function ScriptWorkspace() {
           if (answer) appendToLastAssistant(answer);
           if (event.event === 'error') {
             const detail = String(event.data.message ?? event.data.detail ?? t('chat.streamError'));
-            setError(detail);
+            setChatError(detail);
           }
         }
       }
@@ -104,7 +124,7 @@ export function ScriptWorkspace() {
         appendToLastAssistant(`\n${t('chat.stopped')}`);
       } else {
         const detail = err instanceof Error ? err.message : t('chat.streamError');
-        setError(detail);
+        setChatError(detail);
       }
     } finally {
       setIsStreaming(false);
@@ -148,7 +168,7 @@ export function ScriptWorkspace() {
       {error ? (
         <Alert variant="destructive" className="mb-3">
           <AlertCircle className="h-4 w-4" />
-          <AlertTitle>{t('chat.streamError')}</AlertTitle>
+          <AlertTitle>{errorTitle || t('chat.streamError')}</AlertTitle>
           <AlertDescription>{error}</AlertDescription>
         </Alert>
       ) : null}

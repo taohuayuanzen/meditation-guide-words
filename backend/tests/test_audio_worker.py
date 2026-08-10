@@ -18,8 +18,10 @@ class FakeTTS:
     def __init__(self, audio=b"fake-audio", error=None):
         self.audio = audio
         self.error = error
+        self.last_call: dict | None = None
 
     async def synthesize(self, *args, **kwargs):
+        self.last_call = {"args": args, "kwargs": kwargs}
         if self.error:
             raise self.error
         return self.audio
@@ -70,7 +72,8 @@ async def test_process_task_success(db_session, tmp_path, monkeypatch):
     script_id = await _create_script(db_session)
     task_id = await _create_task(db_session, script_id, tts_params={"voice_id": "v2"})
 
-    monkeypatch.setattr(audio_worker, "get_tts_service", lambda cfg: FakeTTS())
+    fake_tts = FakeTTS()
+    monkeypatch.setattr(audio_worker, "get_tts_service", lambda cfg: fake_tts)
     await audio_worker.process_task(task_id, session_factory=db_session)
 
     task = await _get_task(db_session, task_id)
@@ -79,6 +82,7 @@ async def test_process_task_success(db_session, tmp_path, monkeypatch):
     assert task.retry_count == 0
     assert task.error_msg is None
     assert (tmp_path / f"{task_id}.mp3").read_bytes() == b"fake-audio"
+    assert fake_tts.last_call["kwargs"]["instruction"] == "温柔女声"
 
 
 async def test_process_task_retry_then_failed(db_session, tmp_path, monkeypatch):
@@ -117,6 +121,31 @@ async def test_process_task_text_too_long(db_session, tmp_path):
     await audio_worker.process_task(task_id, session_factory=db_session)
     task = await _get_task(db_session, task_id)
     assert task.status == "failed"
+
+
+async def test_process_task_aliyun_invalid_voice_id_fallback(db_session, tmp_path, monkeypatch):
+    tts_config = {
+        "provider": "aliyun",
+        "api_key": "k",
+        "model": "qwen-audio-3.0-tts-plus",
+        "voice_id": "longanlufeng",
+    }
+    await _create_setting(db_session, tts_config, str(tmp_path))
+    script_id = await _create_script(db_session)
+    task_id = await _create_task(
+        db_session,
+        script_id,
+        tts_params={"voice_id": "female_gentle_01", "speed": 0.85},
+    )
+
+    fake_tts = FakeTTS()
+    monkeypatch.setattr(audio_worker, "get_tts_service", lambda cfg: fake_tts)
+    await audio_worker.process_task(task_id, session_factory=db_session)
+
+    task = await _get_task(db_session, task_id)
+    assert task.status == "completed"
+    assert fake_tts.last_call["kwargs"]["voice_id"] == "longanlufeng"
+    assert fake_tts.last_call["kwargs"]["speed"] == 0.85
 
 
 async def test_process_task_missing_voice(db_session, tmp_path):

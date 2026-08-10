@@ -78,6 +78,14 @@ async def test_llm(config: LLMConfig):
 
 @router.post("/test-tts")
 async def test_tts(config: TTSConfig):
+    logger.info(
+        "[test-tts] provider=%s model=%s voice=%s base_url=%s has_api_key=%s",
+        config.provider,
+        config.model,
+        config.voice_id,
+        config.base_url,
+        bool(config.api_key),
+    )
     try:
         service = get_tts_service(config.model_dump())
     except ValueError as exc:
@@ -89,9 +97,10 @@ async def test_tts(config: TTSConfig):
     try:
         await service.synthesize(text="你好，这是一段测试音频。", voice_id=config.voice_id)
     except httpx.HTTPError as exc:
-        logger.warning("TTS test failed: %s", exc)
+        logger.warning("[test-tts] HTTP error: %s", exc)
         raise HTTPException(status_code=502, detail=f"TTS 连接失败: {exc}") from exc
     except Exception as exc:
-        logger.warning("TTS test failed: %s", exc)
+        logger.warning("[test-tts] synthesis error: %s", exc)
         raise HTTPException(status_code=502, detail=f"TTS 合成失败: {exc}") from exc
+    logger.info("[test-tts] success for provider=%s model=%s", config.provider, config.model)
     return {"status": "ok"}

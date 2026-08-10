@@ -133,7 +133,7 @@ async def test_aliyun_synthesize_returns_audio():
         captured["auth"] = request.headers.get("Authorization")
         return httpx.Response(200, content=b"audio-mp3")
 
-    service = AliyunTTS("ak", transport=httpx.MockTransport(handler))
+    service = AliyunTTS("ak", model="sambert-zhichu-v1", transport=httpx.MockTransport(handler))
     audio = await service.synthesize(
         "你好", "sambert-zhichu-v1", speed=0.8, volume=0.5, output_format="mp3"
     )
@@ -143,3 +143,149 @@ async def test_aliyun_synthesize_returns_audio():
     assert captured["body"]["parameters"]["rate"] == 0.8
     assert captured["body"]["parameters"]["volume"] == 50
     assert captured["body"]["parameters"]["format"] == "mp3"
+
+
+def _sse_line(event: dict) -> bytes:
+    return f"data: {json.dumps(event)}\n\n".encode()
+
+
+async def test_aliyun_qwen_sse_synthesize_accumulates_audio():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["url"] = str(request.url)
+        captured["sse"] = request.headers.get("X-DashScope-SSE") == "enable"
+        captured["body"] = json.loads(request.content)
+        events = [
+            {"output": {"audio": {"data": base64.b64encode(b"part1").decode()}}},
+            {"output": {"audio": {"data": base64.b64encode(b"part2").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    audio = await service.synthesize(
+        "你好", "longanlingxin", speed=1.2, volume=1.5, output_format="wav"
+    )
+    assert audio == b"part1part2"
+    assert "/services/audio/tts/SpeechSynthesizer" in captured["url"]
+    assert captured["sse"] is True
+    assert captured["body"]["model"] == "qwen-audio-3.0-tts-plus"
+    assert captured["body"]["input"]["voice"] == "longanlingxin"
+    assert captured["body"]["input"]["rate"] == 1.2
+    assert captured["body"]["input"]["volume"] == 75
+    assert captured["body"]["input"]["format"] == "wav"
+
+
+async def test_aliyun_qwen_passes_instruction():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        events = [
+            {"output": {"audio": {"data": base64.b64encode(b"x").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    await service.synthesize("hi", "longanlingxin", instruction="温柔女声，语速慢")
+    assert captured["body"]["input"]["instruction"] == "温柔女声，语速慢"
+
+
+async def test_aliyun_cosyvoice_ignores_instruction():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        events = [
+            {"output": {"audio": {"data": base64.b64encode(b"x").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="cosyvoice-v3-flash",
+        transport=httpx.MockTransport(handler),
+    )
+    await service.synthesize("hi", "longanyang", instruction="温柔女声，语速慢")
+    assert "instruction" not in captured["body"]["input"]
+
+
+async def test_aliyun_instruction_truncates_to_100_chars():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        events = [
+            {"output": {"audio": {"data": base64.b64encode(b"x").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    # 60 Chinese chars -> 120 counted chars, should be truncated to 50 chars
+    long_instruction = "温柔" * 30
+    await service.synthesize("hi", "longanlingxin", instruction=long_instruction)
+    sent = captured["body"]["input"]["instruction"]
+    assert len(sent) < len(long_instruction)
+    char_count = sum(2 if __import__("unicodedata").category(ch).startswith("Lo") else 1 for ch in sent)
+    assert char_count <= 100
+
+
+async def test_aliyun_qwen_raises_on_business_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        events = [{"code": "InvalidParameter", "message": "bad voice"}]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(RuntimeError, match="bad voice"):
+        await service.synthesize("hi", "bad-voice")
+
+
+async def test_aliyun_qwen_raises_on_http_error():
+    def handler(request: httpx.Request) -> httpx.Response:
+        return httpx.Response(400, text="Bad Request")
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    with pytest.raises(httpx.HTTPStatusError):
+        await service.synthesize("hi", "bad-voice")
+
+
+async def test_aliyun_qwen_skips_missing_audio_data():
+    def handler(request: httpx.Request) -> httpx.Response:
+        events = [
+            {"output": {"audio": {}}},
+            {"output": {"audio": {"data": base64.b64encode(b"ok").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS(
+        "ak",
+        model="qwen-audio-3.0-tts-plus",
+        transport=httpx.MockTransport(handler),
+    )
+    audio = await service.synthesize("hi", "longanlingxin")
+    assert audio == b"ok"
