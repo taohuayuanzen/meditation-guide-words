@@ -11,6 +11,7 @@
   "workspace": {
     "script": "Script Generator",
     "audio": "Audio Generator",
+    "music": "Instrumental Music",
     "artifact": "Artifacts"
   },
   "chat": {
@@ -73,12 +74,16 @@
     "title": "Artifacts",
     "all": "All",
     "audio": "Audio",
+    "music": "Instrumental Music",
     "script": "Script",
     "empty": "No artifacts yet",
     "download": "Download",
     "rename": "Rename",
     "delete": "Delete",
     "confirmDelete": "Are you sure you want to delete \"{{name}}\"? This action cannot be undone.",
+    "confirmDeleteMusic": "This deletes \"{{name}}\", its source music, final MP3, and task record. It cannot be undone, and generating it again may incur another charge.",
+    "musicDuration": "{{minutes}} min",
+    "aiGenerated": "AI generated",
     "renameTitle": "Rename",
     "renameHint": "Rename the artifact without the file extension",
     "renamePlaceholder": "Enter a new name",
@@ -110,6 +115,7 @@
     "title": "Settings",
     "llm": "LLM",
     "tts": "TTS",
+    "music": "Music Model",
     "dify": "Dify",
     "general": "General",
     "saveAll": "Save All",
@@ -182,6 +188,11 @@
     "invalidUrl": "Please enter a URL starting with http:// or https://",
     "required": "This field is required",
     "invalidRange": "Value is out of valid range",
-    "invalidPositive": "Please enter an integer greater than 0"
+    "invalidPositive": "Please enter an integer greater than 0",
+    "workspaceId": "Workspace ID", "musicProvider": "Music provider", "aliyunBailian": "Aliyun Bailian", "copyAliyunTtsKey": "Copy current Aliyun TTS API Key", "advanced": "Advanced", "musicBaseUrlHint": "Leave blank to derive the Beijing endpoint from Workspace ID. A custom value is never overwritten automatically.", "minimaxBaseUrlHint": "Uses the official MiniMax API URL by default; it normally needs no change.", "sourceFormat": "Source format", "finalFormat": "Final format", "instrumental": "Instrumental", "enabled": "Enabled", "aigcWatermark": "AIGC ending watermark", "disabled": "Disabled", "aigcWatermarkHint": "Fixed off; no AIGC watermark is appended to the audio.", "checkMusicConfig": "Check music configuration", "musicPermissionDeferred": "Configuration and local processing are available. Model access is verified on the first generation."
+  },
+  "music": {
+    "moods": "Moods (multiple)", "instruments": "Instruments (multiple)", "environments": "Environment (multiple)", "rhythm": "Rhythm", "dynamics": "Dynamics", "freeDescription": "Additional description (optional)", "promptPreview": "Prompt preview", "applyNewPreset": "Apply new presets", "copyrightHint": "Do not request imitation of a specific artist, song, or signature melody.", "duration": "Target duration", "minutes": "{{count}} min", "custom": "Custom", "costHintAliyun": "The model is billed by generated source seconds. Longer target music is looped locally and does not repeat model calls. A 200-second source is estimated at about ¥0.40; the Aliyun bill is authoritative.", "costHintMinimax": "MiniMax charges are authoritative in the MiniMax bill. Longer target music is looped locally without repeated model calls.", "generate": "Generate music", "submitting": "Submitting…", "taskCreated": "Music task submitted", "taskList": "Music tasks", "emptyTasks": "No music tasks", "taskNumber": "Task #{{id}}", "statusPending": "Queued", "statusProcessing": "Processing", "statusCompleted": "Completed", "statusFailed": "Failed", "stageGenerating": "Generating", "stageDownloading": "Downloading", "stageSourceReady": "Source ready", "stageProcessing": "Adapting duration", "targetMinutes": "Target {{minutes}} min", "aiGenerated": "AI generated", "costSummary": "Source {{seconds}} sec · Estimated ¥{{cost}} · Aliyun bill is authoritative", "minimaxCostSummary": "Source {{seconds}} sec · MiniMax bill is authoritative", "playerVolume": "Preview volume", "retry": "Retry", "confirmMinimaxRegenerate": "This generation result may be uncertain. Regenerating calls MiniMax again and may incur a duplicate charge. Continue?", "download": "Download", "delete": "Delete", "unavailable": "Music generation is currently unavailable", "missingApiKey": "Music API Key is missing", "missingWorkspace": "Workspace ID is missing", "missingFfmpeg": "FFmpeg is missing", "missingFfprobe": "FFprobe is missing", "goToSettings": "Open music settings", "processingCannotDelete": "This music is being generated or processed and cannot be cancelled in this version. Delete it after completion or failure.", "confirmDelete": "This deletes the source music, final MP3, and task record. It cannot be undone, and generating it again may incur another charge. Continue?", "deleted": "Music task deleted", "downloadTitle": "Choose a download format", "downloadHint": "Only files that actually exist on the server are shown.", "noDownloads": "No files are currently available",
+    "option": { "calm": "Calm", "warm": "Warm", "ethereal": "Ethereal", "deep": "Deep and quiet", "safe": "Safe", "clear": "Clear", "piano": "Piano", "singing_bowl": "Singing bowls", "soft_strings": "Soft strings", "flute": "Flute", "drone": "Sustained drone", "wood_percussion": "Wooden percussion", "no_distinct_instrument": "No distinct instrument", "rain": "Rain", "waves": "Ocean waves", "stream": "Stream", "forest": "Forest", "night": "Night", "campfire": "Campfire", "wind": "Wind", "no_nature": "No nature sounds", "no_beat": "No beat", "free_flow": "Free-flowing", "very_slow": "Very slow", "slow_steady": "Slow and steady", "very_low": "Very low", "steady": "Steady", "gentle_variation": "Gentle variation" }
   }
 }

@@ -48,6 +48,14 @@ BACKEND_PID=$!
 uv run python -m app.services.audio_worker &
 WORKER_PID=$!
 
+MUSIC_WORKER_PID=""
+if command -v ffmpeg >/dev/null 2>&1 && command -v ffprobe >/dev/null 2>&1; then
+  uv run python -m app.services.music_worker &
+  MUSIC_WORKER_PID=$!
+else
+  echo "警告：未找到 FFmpeg/FFprobe，纯音乐 Worker 未启动；其他服务继续启动。"
+fi
+
 # 启动前端
 cd "$ROOT/frontend"
 npm run dev &
@@ -60,5 +68,5 @@ echo "  后端:  http://localhost:8000"
 echo "  Dify:  http://localhost"
 echo "按 Ctrl+C 停止所有服务"
 
-trap "kill $BACKEND_PID $WORKER_PID $FRONTEND_PID" EXIT
+trap 'kill $BACKEND_PID $WORKER_PID $FRONTEND_PID ${MUSIC_WORKER_PID:-} 2>/dev/null || true' EXIT
 wait

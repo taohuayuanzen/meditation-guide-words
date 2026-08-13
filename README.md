@@ -6,6 +6,8 @@
 
 - **工作区 1：引导词生成** — 与 Dify 智能体对话，自然语言流式生成冥想引导词，支持多轮改写，一键保存到本地。
 - **工作区 2：音频生成** — 选择已保存引导词，用自然语言描述声音风格（如"温柔女声，语速慢"），解析为 TTS 参数后异步合成，支持播放、下载与失败重试。
+- **工作区 3：纯音乐** — 默认使用 MiniMax `music-3.0` 生成源 MP3，也可切换阿里云百炼 `fun-music-v1` 生成源 WAV，再由本机 FFmpeg 循环或裁剪为 1～60 分钟 MP3。
+- **产物** — 统一管理引导词、引导音频和纯音乐，支持播放、下载、重命名和删除。
 - **设置页** — 可视化配置 LLM、TTS、Dify、通用设置（语言/主题/音频目录），支持测试连接、中英文切换、深浅色主题。
 
 ## 技术栈
@@ -21,6 +23,7 @@
 
 - Python 3.11+、uv
 - Node.js 20.19+（Vite 8 要求）
+- FFmpeg 与 FFprobe（纯音乐时长处理；Windows 安装见 `docs/ops/music-ffmpeg-windows.md`）
 - Docker + Docker Compose（用于启动 Dify）
 - 真实账号/凭证：DeepSeek（或其他 OpenAI 兼容 LLM）、火山引擎或阿里云 TTS
 
@@ -72,6 +75,10 @@ cd backend
 cd frontend
 npm install
 npm run dev
+
+# 终端 4：纯音乐 Worker（需 FFmpeg/FFprobe）
+cd backend
+.\.venv\Scripts\python.exe -m app.services.music_worker
 ```
 
 访问 `http://localhost:5173`。
@@ -84,9 +91,9 @@ npm run dev
 
 1. **大模型（LLM）**：供应商、API Base URL、API Key、模型名称，点击"测试连接"验证。
 2. **语音合成（TTS）**：选择火山引擎或阿里云，填写 API Key / Secret Key / App ID / 音色 ID 等，点击"测试合成"验证。
-3. **Dify**：填写 Dify 地址与两个应用的 API Key（App A / App B）。
-4. **通用**：语言（中/英）、主题（浅色/深色）、音频保存目录。
-5. 点击"保存全部"。
+3. **音乐模型**：默认选择 MiniMax 并填写可调用正式版 `music-3.0` 的 API Key；也可切换阿里云百炼，填写北京地域 Workspace ID 和独立 API Key。两套凭证独立保存，切换不会互相覆盖。
+4. **Dify**：填写 Dify 地址与两个应用的 API Key（App A / App B）。
+5. **通用**：语言（中/英）、主题（浅色/深色）、音频保存目录。
 
 > TTS 凭证获取与联调步骤见 `docs/ops/t5-tts-operations.md`；Dify 部署与 App 创建见 `docs/ops/t3-operations.md`。
 
@@ -129,6 +136,8 @@ npm run build          # 类型检查 + 生产构建
 |---|---|
 | 页面对话返回 `[HTTP 502]` | 后端未启动：`cd backend && .\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000` |
 | 音频任务一直 `pending` | Worker 未启动：`.\.venv\Scripts\python.exe -m app.services.audio_worker` |
+| 纯音乐生成按钮不可用 | MiniMax 检查 API Key；阿里云检查 API Key 和北京地域 Workspace ID；两者都需 FFmpeg/FFprobe |
+| 纯音乐任务停在处理中 | 检查 Music Worker：`.\.venv\Scripts\python.exe -m app.services.music_worker`；中断任务会按已保存阶段恢复 |
 | 任务 `failed`（`no such column: retry_count`） | 数据库需重建：删除 `backend/data/meditation.db` 后重启后端 |
 | `test-tts` 失败 | 按 `docs/ops/t5-tts-operations.md` 核对凭证（火山需 AK/SK + AppID） |
 | Dify 相关接口报"配置未完成" | 在设置页配置 Dify 两个 App 的 API Key |
@@ -140,3 +149,14 @@ npm run build          # 类型检查 + 生产构建
 - [任务文档](docs/task/)
 - [运维文档](docs/ops/)
 - [验收测试用例](docs/test/)
+- [Windows FFmpeg 与纯音乐运维](docs/ops/music-ffmpeg-windows.md)
+- [纯音乐人工验收清单](docs/test/music-workspace-manual-checklist.md)
+
+## 纯音乐文件与费用
+
+- MiniMax 原始 MP3：`backend/data/music/source/{task_id}.mp3`
+- 阿里云原始 WAV：`backend/data/music/source/{task_id}.wav`
+- 最终 MP3：`backend/data/music/final/{task_id}_{minutes}min.mp3`
+- MiniMax 费用不做本地估算，以 MiniMax 账单为准；阿里云继续按实际源音乐秒数估算。目标长音乐由本地循环得到，不会按目标时长重复调用模型。
+- MiniMax 生成失败不会自动重新调用模型；只有用户明确确认后才允许重新生成。下载与 FFmpeg 失败会复用已有 URL 或源文件。
+- 自动测试全部使用本地文件或 Mock，不调用真实模型。

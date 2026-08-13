@@ -12,13 +12,15 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.config import settings
 from app.db import get_db
 from app.models.audio_task import AudioTask
+from app.models.music_task import MusicTask
 from app.models.script import Script
+from app.services.music_files import delete_music_files, find_final_file, rename_final_file
 from app.utils.file_utils import ensure_dir, get_script_output_dir, sanitize_filename
 
 router = APIRouter()
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
-ArtifactTypeFilter = Annotated[str | None, Query(pattern=r"^(audio|script)$")]
+ArtifactTypeFilter = Annotated[str | None, Query(pattern=r"^(audio|music|script)$")]
 Page = Annotated[int, Query(ge=1)]
 PageSize = Annotated[int, Query(ge=1, le=100)]
 
@@ -143,6 +145,33 @@ async def list_artifacts(
                     }
                 )
 
+    # 纯音乐产物：以 music_tasks.file_path 和受控目录中的真实文件为准
+    if type is None or type == "music":
+        music_result = await db.execute(
+            select(MusicTask).where(MusicTask.status == "completed")
+        )
+        for task in music_result.scalars().all():
+            file_path = find_final_file(task)
+            if file_path is None:
+                continue
+            artifacts.append(
+                {
+                    "id": f"music_{task.id}",
+                    "type": "music",
+                    "name": file_path.name,
+                    "created_at": _format_time(task.created_at),
+                    "task_id": task.id,
+                    "preset_params": task.preset_params,
+                    "target_duration_seconds": task.target_duration_seconds,
+                    "source_duration_seconds": task.source_duration_seconds,
+                    "provider": task.provider,
+                    "model": task.model,
+                    "source_format": task.source_format,
+                    "is_ai_generated": task.is_ai_generated,
+                    "_sort_time": task.created_at,
+                }
+            )
+
     artifacts.sort(key=lambda artifact: _sort_timestamp(artifact["_sort_time"]), reverse=True)
     total = len(artifacts)
     start = (page - 1) * page_size
@@ -155,7 +184,7 @@ async def list_artifacts(
 @router.get("/{artifact_id}/download")
 async def download_artifact(artifact_id: str, db: DbSession):
     artifact_type, _, raw_id = artifact_id.partition("_")
-    if artifact_type not in ("audio", "script"):
+    if artifact_type not in ("audio", "music", "script"):
         raise HTTPException(status_code=400, detail="Invalid artifact id")
 
     if artifact_type == "audio":
@@ -172,6 +201,19 @@ async def download_artifact(artifact_id: str, db: DbSession):
             filename=os.path.basename(task.file_path),
             media_type="application/octet-stream",
         )
+
+    if artifact_type == "music":
+        try:
+            task_id = int(raw_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid music artifact id") from exc
+        task = await db.get(MusicTask, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Music task not found")
+        file_path = find_final_file(task)
+        if file_path is None:
+            raise HTTPException(status_code=404, detail="Music file not found")
+        return FileResponse(file_path, filename=file_path.name, media_type="audio/mpeg")
 
     # script
     try:
@@ -207,7 +249,7 @@ class RenamePayload(BaseModel):
 @router.post("/{artifact_id}/rename")
 async def rename_artifact(artifact_id: str, payload: RenamePayload, db: DbSession):
     artifact_type, _, raw_id = artifact_id.partition("_")
-    if artifact_type not in ("audio", "script"):
+    if artifact_type not in ("audio", "music", "script"):
         raise HTTPException(status_code=400, detail="Invalid artifact id")
 
     new_name = sanitize_filename(payload.new_name)
@@ -239,6 +281,24 @@ async def rename_artifact(artifact_id: str, payload: RenamePayload, db: DbSessio
         await db.commit()
         await db.refresh(task)
         return {"id": artifact_id, "name": new_filename}
+
+    if artifact_type == "music":
+        try:
+            task_id = int(raw_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid music artifact id") from exc
+        task = await db.get(MusicTask, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Music task not found")
+        try:
+            new_path = rename_final_file(task, new_name)
+        except FileNotFoundError as exc:
+            raise HTTPException(status_code=404, detail="Music file not found") from exc
+        except FileExistsError as exc:
+            raise HTTPException(status_code=409, detail="File already exists") from exc
+        task.file_path = str(new_path)
+        await db.commit()
+        return {"id": artifact_id, "name": new_path.name}
 
     # script
     try:
@@ -286,7 +346,7 @@ async def rename_artifact(artifact_id: str, payload: RenamePayload, db: DbSessio
 @router.delete("/{artifact_id}", status_code=204)
 async def delete_artifact(artifact_id: str, db: DbSession):
     artifact_type, _, raw_id = artifact_id.partition("_")
-    if artifact_type not in ("audio", "script"):
+    if artifact_type not in ("audio", "music", "script"):
         raise HTTPException(status_code=400, detail="Invalid artifact id")
 
     if artifact_type == "audio":
@@ -300,6 +360,24 @@ async def delete_artifact(artifact_id: str, db: DbSession):
             raise HTTPException(status_code=404, detail="Audio task not found")
         if task.file_path and os.path.exists(task.file_path):
             os.remove(task.file_path)
+        await db.delete(task)
+        await db.commit()
+        return
+
+    if artifact_type == "music":
+        try:
+            task_id = int(raw_id)
+        except ValueError as exc:
+            raise HTTPException(status_code=400, detail="Invalid music artifact id") from exc
+        task = await db.get(MusicTask, task_id)
+        if not task:
+            raise HTTPException(status_code=404, detail="Music task not found")
+        if task.status == "processing":
+            raise HTTPException(status_code=409, detail="音乐正在处理中，当前版本不支持取消")
+        try:
+            delete_music_files(task)
+        except OSError as exc:
+            raise HTTPException(status_code=500, detail="音乐文件删除失败") from exc
         await db.delete(task)
         await db.commit()
         return

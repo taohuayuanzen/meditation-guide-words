@@ -4,8 +4,10 @@ import {
   Download,
   FileText,
   Headphones,
+  Music2,
   Pencil,
   RefreshCw,
+  Sparkles,
   Trash2,
 } from 'lucide-react';
 import { useCallback, useEffect, useState } from 'react';
@@ -64,6 +66,7 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
 
   const [deleteArtifactId, setDeleteArtifactId] = useState<string | null>(null);
   const [deleteArtifactName, setDeleteArtifactName] = useState('');
+  const [deleteArtifactType, setDeleteArtifactType] = useState<Artifact['type'] | null>(null);
   const [deleteBusy, setDeleteBusy] = useState(false);
 
   const loadArtifacts = useCallback(async () => {
@@ -97,7 +100,7 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
   const openRename = (artifact: Artifact) => {
     setRenameArtifactId(artifact.id);
     setRenameValue(
-      artifact.type === 'audio'
+      artifact.type === 'audio' || artifact.type === 'music'
         ? baseNameWithoutExt(artifact.name)
         : artifact.title || baseNameWithoutExt(artifact.name),
     );
@@ -128,11 +131,13 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
   const openDelete = (artifact: Artifact) => {
     setDeleteArtifactId(artifact.id);
     setDeleteArtifactName(artifact.name);
+    setDeleteArtifactType(artifact.type);
   };
 
   const closeDelete = () => {
     setDeleteArtifactId(null);
     setDeleteArtifactName('');
+    setDeleteArtifactType(null);
     setDeleteBusy(false);
   };
 
@@ -175,6 +180,8 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
               <div className="flex items-center gap-2 font-semibold">
                 {artifact.type === 'audio' ? (
                   <Headphones className="h-4 w-4 shrink-0 text-muted-foreground" />
+                ) : artifact.type === 'music' ? (
+                  <Music2 className="h-4 w-4 shrink-0 text-muted-foreground" />
                 ) : (
                   <FileText className="h-4 w-4 shrink-0 text-muted-foreground" />
                 )}
@@ -186,11 +193,19 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
                 {artifact.type === 'audio' && artifact.script_title
                   ? `${artifact.script_title} · `
                   : null}
+                {artifact.type === 'music' && artifact.target_duration_seconds
+                  ? `${t('artifact.musicDuration', { minutes: artifact.target_duration_seconds / 60 })} · ${artifact.provider === 'minimax' ? 'MiniMax' : t('settings.aliyunBailian')} · ${artifact.model ?? ''} · `
+                  : null}
                 {artifact.created_at ? `${formatTime(artifact.created_at)}` : null}
               </div>
+              {artifact.type === 'music' && artifact.is_ai_generated ? (
+                <div className="mt-1 inline-flex items-center gap-1 text-xs text-primary">
+                  <Sparkles className="h-3 w-3" /> {t('artifact.aiGenerated')}
+                </div>
+              ) : null}
             </div>
             <div className="flex shrink-0 flex-wrap items-center gap-2">
-              {artifact.type === 'audio' ? (
+              {artifact.type === 'audio' || artifact.type === 'music' ? (
                 <>
                   {/* biome-ignore lint/a11y/useMediaCaption: generated audio has no captions */}
                   <audio
@@ -252,6 +267,7 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
         <TabsList className="w-fit">
           <TabsTrigger value="all">{t('artifact.all')}</TabsTrigger>
           <TabsTrigger value="audio">{t('artifact.audio')}</TabsTrigger>
+          <TabsTrigger value="music">{t('artifact.music')}</TabsTrigger>
           <TabsTrigger value="script">{t('artifact.script')}</TabsTrigger>
         </TabsList>
         <div className="mt-4 flex-1 overflow-hidden">
@@ -322,7 +338,9 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
           <DialogHeader>
             <DialogTitle>{t('artifact.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              {t('artifact.confirmDelete', { name: deleteArtifactName })}
+              {deleteArtifactType === 'music'
+                ? t('artifact.confirmDeleteMusic', { name: deleteArtifactName })
+                : t('artifact.confirmDelete', { name: deleteArtifactName })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>

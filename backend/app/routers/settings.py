@@ -37,6 +37,7 @@ async def get_settings(db: DbSession):
         tts_config=setting.tts_config,
         dify_config=setting.dify_config,
         general_config=setting.general_config,
+        music_config=setting.music_config or {},
     )
 
 
@@ -47,6 +48,7 @@ async def save_settings(payload: SettingSchema, db: DbSession):
     setting.tts_config = payload.tts_config.model_dump()
     setting.dify_config = payload.dify_config.model_dump()
     setting.general_config = payload.general_config.model_dump()
+    setting.music_config = payload.music_config.model_dump()
     await db.commit()
     await db.refresh(setting)
     return payload

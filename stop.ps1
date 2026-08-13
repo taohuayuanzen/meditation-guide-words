@@ -173,13 +173,13 @@ function Get-ProjectWorkerProcesses {
         Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
             Where-Object {
                 $_.CommandLine -and
-                $_.CommandLine -match 'app\.services\.audio_worker' -and
+                $_.CommandLine -match 'app\.services\.(audio|music)_worker' -and
                 (Test-ProcessLineageMatchesProject $_)
             }
     )
 }
 
-function Get-ActiveAudioTaskCount {
+function Get-ActiveTaskCounts {
     if (-not (Test-Path -LiteralPath $DatabasePath) -or -not (Test-Path -LiteralPath $BackendPython)) {
         return $null
     }
@@ -188,16 +188,22 @@ function Get-ActiveAudioTaskCount {
 import sqlite3, sys
 db = sys.argv[1]
 con = sqlite3.connect(db)
-print(con.execute("SELECT COUNT(*) FROM audio_tasks WHERE status IN ('pending', 'processing')").fetchone()[0])
+def count(table):
+    exists = con.execute("SELECT 1 FROM sqlite_master WHERE type='table' AND name=?", (table,)).fetchone()
+    if not exists:
+        return 0
+    return con.execute(f"SELECT COUNT(*) FROM {table} WHERE status IN ('pending', 'processing')").fetchone()[0]
+print(f"{count('audio_tasks')},{count('music_tasks')}")
 '@
     $queryFile = Join-Path ([System.IO.Path]::GetTempPath()) "meditation-guide-stop-query-$PID.py"
     try {
         [System.IO.File]::WriteAllText($queryFile, $query, [System.Text.UTF8Encoding]::new($false))
         $result = & $BackendPython $queryFile $DatabasePath 2>$null
-        if ($LASTEXITCODE -ne 0 -or $result -notmatch '^\d+$') {
+        if ($LASTEXITCODE -ne 0 -or $result -notmatch '^\d+,\d+$') {
             return $null
         }
-        return [int]$result
+        $parts = $result.Split(',')
+        return [pscustomobject]@{ Audio = [int]$parts[0]; Music = [int]$parts[1] }
     } catch {
         return $null
     } finally {
@@ -241,11 +247,11 @@ function Get-DifyDirectory {
 try {
     Write-Status "Project directory: $ProjectRoot"
 
-    $activeTaskCount = Get-ActiveAudioTaskCount
-    if ($null -eq $activeTaskCount) {
-        Write-Skipped 'Could not determine active audio task count; continuing shutdown.'
-    } elseif ($activeTaskCount -gt 0) {
-        $message = "$activeTaskCount active audio task(s) will be interrupted."
+    $activeTaskCounts = Get-ActiveTaskCounts
+    if ($null -eq $activeTaskCounts) {
+        Write-Skipped 'Could not determine active audio/music task counts; continuing shutdown.'
+    } elseif (($activeTaskCounts.Audio + $activeTaskCounts.Music) -gt 0) {
+        $message = "$($activeTaskCounts.Audio) active audio task(s) and $($activeTaskCounts.Music) active music task(s) will be interrupted; music tasks resume by stage on next startup."
         if ($AbortIfActiveTasks) {
             Write-Failure "$message Shutdown was cancelled because -AbortIfActiveTasks was specified."
             exit 1
@@ -257,18 +263,25 @@ try {
 
     $workers = Get-ProjectWorkerProcesses
     if ($workers.Count -eq 0) {
-        Write-Skipped 'Audio Worker is not running.'
+        Write-Skipped 'Audio/Music Workers are not running.'
     } else {
         foreach ($worker in $workers) {
-            $serviceWindow = Get-ServiceWindowProcess $worker.ProcessId 'app\.services\.audio_worker'
+            $isMusicWorker = $worker.CommandLine -match 'app\.services\.music_worker'
+            $workerPattern = if ($isMusicWorker) { 'app\.services\.music_worker' } else { 'app\.services\.audio_worker' }
+            $workerName = if ($isMusicWorker) { 'Music Worker' } else { 'Audio Worker' }
+            if (-not (Get-ProcessRecord $worker.ProcessId)) {
+                Write-Skipped "$workerName process (PID $($worker.ProcessId)) already exited with its managed process tree."
+                continue
+            }
+            $serviceWindow = Get-ServiceWindowProcess $worker.ProcessId $workerPattern
             if ($serviceWindow) {
-                Stop-ProcessTree $serviceWindow.ProcessId 'Audio Worker'
+                Stop-ProcessTree $serviceWindow.ProcessId $workerName
             } else {
                 try {
-                    Write-Status "Stopping Audio Worker process (PID $($worker.ProcessId)); no managed service window was found."
+                    Write-Status "Stopping $workerName process (PID $($worker.ProcessId)); no managed service window was found."
                     Stop-Process -Id $worker.ProcessId -Force -ErrorAction Stop
                 } catch {
-                    Write-Failure "Could not stop Audio Worker (PID $($worker.ProcessId)): $($_.Exception.Message)"
+                    Write-Failure "Could not stop $workerName (PID $($worker.ProcessId)): $($_.Exception.Message)"
                 }
             }
         }

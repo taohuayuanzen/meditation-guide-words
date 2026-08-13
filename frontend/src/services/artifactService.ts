@@ -2,7 +2,7 @@ import { readErrorDetail } from '@/services/http';
 
 export interface Artifact {
   id: string;
-  type: 'audio' | 'script';
+  type: 'audio' | 'music' | 'script';
   name: string;
   created_at?: string | null;
   // audio specific
@@ -11,9 +11,17 @@ export interface Artifact {
   // script specific
   title?: string | null;
   script_id?: number | null;
+  // music specific
+  preset_params?: Record<string, unknown> | null;
+  target_duration_seconds?: number | null;
+  source_duration_seconds?: number | null;
+  provider?: 'minimax' | 'aliyun' | null;
+  model?: string | null;
+  source_format?: 'wav' | 'mp3' | null;
+  is_ai_generated?: boolean;
 }
 
-export type ArtifactType = 'all' | 'audio' | 'script';
+export type ArtifactType = 'all' | 'audio' | 'music' | 'script';
 
 export interface ArtifactListResponse {
   items: Artifact[];

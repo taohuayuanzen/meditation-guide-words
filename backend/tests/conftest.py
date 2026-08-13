@@ -5,6 +5,15 @@ from sqlalchemy.pool import StaticPool
 
 from app.db import Base, get_db
 from app.main import app
+from app.services.media_capabilities import MediaCapabilities
+
+
+@pytest.fixture(autouse=True)
+def music_capabilities_available(monkeypatch):
+    monkeypatch.setattr(
+        "app.routers.music_tasks.get_media_capabilities",
+        lambda: MediaCapabilities(ffmpeg_available=True, ffprobe_available=True),
+    )
 
 
 @pytest.fixture

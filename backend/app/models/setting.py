@@ -15,4 +15,5 @@ class Setting(Base):
     tts_config: Mapped[dict] = mapped_column(JSON, default=dict)
     dify_config: Mapped[dict] = mapped_column(JSON, default=dict)
     general_config: Mapped[dict] = mapped_column(JSON, default=dict)
+    music_config: Mapped[dict] = mapped_column(JSON, default=dict)
     updated_at: Mapped[datetime] = mapped_column(default=utc_now)

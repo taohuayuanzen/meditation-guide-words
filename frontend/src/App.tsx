@@ -5,6 +5,7 @@ import { useAppBootstrap } from '@/hooks/useAppBootstrap';
 import { DifySettingsPage } from '@/pages/settings/DifySettingsPage';
 import { GeneralSettingsPage } from '@/pages/settings/GeneralSettingsPage';
 import { LLMSettingsPage } from '@/pages/settings/LLMSettingsPage';
+import { MusicSettingsPage } from '@/pages/settings/MusicSettingsPage';
 import { SettingsLayout } from '@/pages/settings/SettingsLayout';
 import { TTSSettingsPage } from '@/pages/settings/TTSSettingsPage';
 
@@ -16,6 +17,7 @@ const router = createBrowserRouter([
       { index: true, element: <Navigate to="/settings/llm" replace /> },
       { path: 'llm', element: <LLMSettingsPage /> },
       { path: 'tts', element: <TTSSettingsPage /> },
+      { path: 'music', element: <MusicSettingsPage /> },
       { path: 'dify', element: <DifySettingsPage /> },
       { path: 'general', element: <GeneralSettingsPage /> },
     ],

@@ -1,10 +1,18 @@
-import type { DifyConfig, GeneralConfig, LLMConfig, Settings, TTSConfig } from '@/types';
+import type {
+  DifyConfig,
+  GeneralConfig,
+  LLMConfig,
+  MusicConfig,
+  Settings,
+  TTSConfig,
+} from '@/types';
 
 export interface SettingsErrors {
   llm_config?: Partial<Record<keyof LLMConfig, string>>;
   tts_config?: Partial<Record<keyof TTSConfig, string>>;
   dify_config?: Partial<Record<keyof DifyConfig, string>>;
   general_config?: Partial<Record<keyof GeneralConfig, string>>;
+  music_config?: Partial<Record<keyof MusicConfig, string>>;
 }
 
 function isValidUrl(url: string) {
@@ -42,6 +50,19 @@ export function validateSettings(settings: Settings): SettingsErrors {
   const generalErrors: Partial<Record<keyof GeneralConfig, string>> = {};
   if (!general.audio_output_dir) generalErrors.audio_output_dir = 'required';
   if (Object.keys(generalErrors).length > 0) errors.general_config = generalErrors;
+
+  const music = settings.music_config;
+  const musicErrors: Partial<Record<keyof MusicConfig, string>> = {};
+  if (music.aliyun?.base_url && !isValidUrl(music.aliyun.base_url)) {
+    musicErrors.aliyun = 'invalidUrl';
+  }
+  if (!music.minimax?.base_url || !isValidUrl(music.minimax.base_url)) {
+    musicErrors.minimax = 'invalidUrl';
+  }
+  if (music.worker_concurrency < 1 || music.worker_concurrency > 8) {
+    musicErrors.worker_concurrency = 'invalidRange';
+  }
+  if (Object.keys(musicErrors).length > 0) errors.music_config = musicErrors;
 
   return errors;
 }

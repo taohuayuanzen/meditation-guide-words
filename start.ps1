@@ -62,8 +62,9 @@ function Test-PortInUse {
 }
 
 function Test-WorkerRunning {
+    param([string]$Module)
     $workers = Get-CimInstance Win32_Process -ErrorAction SilentlyContinue |
-        Where-Object { $_.CommandLine -and $_.CommandLine -like '*app.services.audio_worker*' }
+        Where-Object { $_.CommandLine -and $_.CommandLine -like "*$Module*" }
     return [bool]$workers
 }
 
@@ -168,7 +169,7 @@ try {
         if (-not (Wait-ForHttpStatus 'http://localhost:8000/api/health' '200' 30 'Backend')) { exit 1 }
     }
 
-    if (Test-WorkerRunning) {
+    if (Test-WorkerRunning 'app.services.audio_worker') {
         Write-Status 'Audio Worker is already running; reusing it.'
     } else {
         if (-not (Test-Path -LiteralPath $BackendPython)) {
@@ -177,7 +178,19 @@ try {
         Write-Status 'Starting Audio Worker window...'
         Start-ServiceWindow 'Meditation Audio Worker' $BackendDir '.\.venv\Scripts\python.exe -m app.services.audio_worker'
         Start-Sleep -Seconds 2
-        if (-not (Test-WorkerRunning)) { throw 'Audio Worker did not start. Check its window output.' }
+        if (-not (Test-WorkerRunning 'app.services.audio_worker')) { throw 'Audio Worker did not start. Check its window output.' }
+    }
+
+    $hasFfmpeg = (Test-Command 'ffmpeg') -and (Test-Command 'ffprobe')
+    if (-not $hasFfmpeg) {
+        Write-Host '[WARNING] FFmpeg or FFprobe was not found. Music Worker will not start; existing files remain available.' -ForegroundColor Yellow
+    } elseif (Test-WorkerRunning 'app.services.music_worker') {
+        Write-Status 'Music Worker is already running; reusing it.'
+    } else {
+        Write-Status 'FFmpeg and FFprobe are available. Starting Music Worker window...'
+        Start-ServiceWindow 'Meditation Music Worker' $BackendDir '.\.venv\Scripts\python.exe -m app.services.music_worker'
+        Start-Sleep -Seconds 2
+        if (-not (Test-WorkerRunning 'app.services.music_worker')) { throw 'Music Worker did not start. Check its window output.' }
     }
 
     $frontendStatus = Get-HttpStatus 'http://localhost:5173/'

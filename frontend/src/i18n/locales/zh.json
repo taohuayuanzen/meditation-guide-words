@@ -11,6 +11,7 @@
   "workspace": {
     "script": "引导词",
     "audio": "引导音频",
+    "music": "纯音乐",
     "artifact": "产物"
   },
   "chat": {
@@ -73,12 +74,16 @@
     "title": "产物",
     "all": "全部",
     "audio": "引导音频",
+    "music": "纯音乐",
     "script": "引导词",
     "empty": "暂无产物",
     "download": "下载",
     "rename": "重命名",
     "delete": "删除",
     "confirmDelete": "确定删除「{{name}}」？此操作不可恢复。",
+    "confirmDeleteMusic": "将删除「{{name}}」、原始音乐、最终 MP3 和任务记录。此操作不可恢复，以后重新生成可能再次产生费用。",
+    "musicDuration": "{{minutes}} 分钟",
+    "aiGenerated": "AI 生成",
     "renameTitle": "重命名",
     "renameHint": "修改产物名称，不包含扩展名",
     "renamePlaceholder": "请输入新名称",
@@ -110,6 +115,7 @@
     "title": "设置",
     "llm": "大模型",
     "tts": "语音合成",
+    "music": "音乐模型",
     "dify": "Dify",
     "general": "通用",
     "saveAll": "保存全部",
@@ -182,6 +188,11 @@
     "invalidUrl": "请输入以 http:// 或 https:// 开头的 URL",
     "required": "此项为必填",
     "invalidRange": "数值不在有效范围内",
-    "invalidPositive": "请输入大于 0 的整数"
+    "invalidPositive": "请输入大于 0 的整数",
+    "workspaceId": "Workspace ID", "musicProvider": "音乐供应商", "aliyunBailian": "阿里云百炼", "copyAliyunTtsKey": "复制当前阿里云 TTS API Key", "advanced": "高级配置", "musicBaseUrlHint": "留空时根据 Workspace ID 自动使用北京地域地址。手工填写后不会自动覆盖。", "minimaxBaseUrlHint": "默认使用 MiniMax 官方 API 地址，通常无需修改。", "sourceFormat": "源格式", "finalFormat": "最终格式", "instrumental": "纯音乐", "enabled": "开启", "aigcWatermark": "AIGC 尾部水印", "disabled": "关闭", "aigcWatermarkHint": "固定关闭，不在音频尾部写入 AIGC 水印。", "checkMusicConfig": "检查音乐配置", "musicPermissionDeferred": "配置和本地处理能力可用，模型权限将在首次生成时验证。"
+  },
+  "music": {
+    "moods": "情绪（多选）", "instruments": "乐器（多选）", "environments": "环境（多选）", "rhythm": "节奏", "dynamics": "动态", "freeDescription": "自由描述（可选）", "promptPreview": "Prompt 预览", "applyNewPreset": "应用新预设", "copyrightHint": "请勿要求模仿具体艺术家、歌曲或标志性旋律。", "duration": "目标时长", "minutes": "{{count}} 分钟", "custom": "自定义", "costHintAliyun": "模型按实际生成的源音乐秒数计费；目标长音乐由本地循环生成，不会按目标时长重复调用模型。参考：若源音乐为 200 秒，估算约 0.40 元，以阿里云账单为准。", "costHintMinimax": "MiniMax 费用以 MiniMax 账单为准；目标长音乐由本地循环生成，不会按目标时长重复调用模型。", "generate": "生成纯音乐", "submitting": "提交中…", "taskCreated": "纯音乐任务已提交", "taskList": "音乐任务", "emptyTasks": "暂无音乐任务", "taskNumber": "任务 #{{id}}", "statusPending": "排队中", "statusProcessing": "处理中", "statusCompleted": "已完成", "statusFailed": "失败", "stageGenerating": "生成中", "stageDownloading": "下载中", "stageSourceReady": "源文件就绪", "stageProcessing": "时长处理中", "targetMinutes": "目标 {{minutes}} 分钟", "aiGenerated": "AI 生成", "costSummary": "源音乐 {{seconds}} 秒 · 估算费用 ¥{{cost}} · 以阿里云账单为准", "minimaxCostSummary": "源音乐 {{seconds}} 秒 · 费用以 MiniMax 账单为准", "playerVolume": "试听音量", "retry": "重试", "confirmMinimaxRegenerate": "本次生成结果可能不确定。重新生成会再次调用 MiniMax，并可能重复计费。是否继续？", "download": "下载", "delete": "删除", "unavailable": "当前无法提交纯音乐任务", "missingApiKey": "缺少音乐 API Key", "missingWorkspace": "缺少 Workspace ID", "missingFfmpeg": "缺少 FFmpeg", "missingFfprobe": "缺少 FFprobe", "goToSettings": "前往音乐设置", "processingCannotDelete": "音乐正在生成或处理中，当前版本不支持取消。处理结束或失败后可删除。", "confirmDelete": "将删除原始音乐、最终 MP3 和任务记录。操作不可恢复，以后重新生成可能再次产生费用。确定继续吗？", "deleted": "音乐任务已删除", "downloadTitle": "选择下载格式", "downloadHint": "仅显示服务器上真实存在的文件。", "noDownloads": "当前没有可下载文件",
+    "option": { "calm": "平静", "warm": "温暖", "ethereal": "空灵", "deep": "沉静", "safe": "安全", "clear": "清澈", "piano": "钢琴", "singing_bowl": "颂钵", "soft_strings": "柔和弦乐", "flute": "长笛", "drone": "Drone持续音", "wood_percussion": "木质打击乐", "no_distinct_instrument": "无明显乐器", "rain": "雨声", "waves": "海浪", "stream": "溪流", "forest": "森林", "night": "夜晚", "campfire": "篝火", "wind": "风声", "no_nature": "无自然声", "no_beat": "无节拍", "free_flow": "自由流动", "very_slow": "极慢", "slow_steady": "缓慢稳定", "very_low": "极低动态", "steady": "平稳", "gentle_variation": "轻微起伏" }
   }
 }

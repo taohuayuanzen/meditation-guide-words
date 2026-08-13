@@ -1,4 +1,4 @@
-import { Archive, FileText, Headphones, Menu, Settings } from 'lucide-react';
+import { Archive, FileText, Headphones, Menu, Music2, Settings } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -10,12 +10,14 @@ import { useAppStore } from '@/stores/appStore';
 const ICONS = {
   script: FileText,
   audio: Headphones,
+  music: Music2,
   artifact: Archive,
 };
 
 const WORKSPACE_TITLE_KEY: Record<keyof typeof ICONS, string> = {
   script: 'workspace.script',
   audio: 'workspace.audio',
+  music: 'workspace.music',
   artifact: 'workspace.artifact',
 };
 

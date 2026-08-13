@@ -23,6 +23,8 @@ def init_db() -> None:
     if db_dir:
         os.makedirs(db_dir, exist_ok=True)
     os.makedirs(settings.audio_output_dir, exist_ok=True)
+    os.makedirs(settings.music_source_dir, exist_ok=True)
+    os.makedirs(settings.music_final_dir, exist_ok=True)
 
 
 async def create_tables() -> None:

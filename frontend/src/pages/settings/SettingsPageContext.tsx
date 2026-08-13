@@ -7,7 +7,12 @@ import type { Settings } from '@/types';
 import { applyTheme } from '@/utils/theme';
 import { validateSettings, type SettingsErrors } from '@/utils/settingsValidation';
 
-export type SettingsSection = 'llm_config' | 'tts_config' | 'dify_config' | 'general_config';
+export type SettingsSection =
+  | 'llm_config'
+  | 'tts_config'
+  | 'music_config'
+  | 'dify_config'
+  | 'general_config';
 
 interface SettingsPageState {
   settings: Settings | null;
@@ -45,6 +50,7 @@ export function SettingsPageProvider({ children }: { children: React.ReactNode }
   const [saving, setSaving] = useState<Record<SettingsSection, boolean>>({
     llm_config: false,
     tts_config: false,
+    music_config: false,
     dify_config: false,
     general_config: false,
   });
@@ -73,11 +79,18 @@ export function SettingsPageProvider({ children }: { children: React.ReactNode }
 
   const dirty = useMemo<Record<SettingsSection, boolean>>(() => {
     if (!settings || !draft) {
-      return { llm_config: false, tts_config: false, dify_config: false, general_config: false };
+      return {
+        llm_config: false,
+        tts_config: false,
+        music_config: false,
+        dify_config: false,
+        general_config: false,
+      };
     }
     return {
       llm_config: !isEqualSection(settings.llm_config, draft.llm_config),
       tts_config: !isEqualSection(settings.tts_config, draft.tts_config),
+      music_config: !isEqualSection(settings.music_config, draft.music_config),
       dify_config: !isEqualSection(settings.dify_config, draft.dify_config),
       general_config: !isEqualSection(settings.general_config, draft.general_config),
     };

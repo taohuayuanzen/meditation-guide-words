@@ -1,4 +1,4 @@
-import { Archive, FileText, Headphones } from 'lucide-react';
+import { Archive, FileText, Headphones, Music2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,7 @@ interface WorkspaceNavProps {
 const ITEMS: { value: Workspace; icon: typeof FileText; labelKey: string }[] = [
   { value: 'script', icon: FileText, labelKey: 'workspace.script' },
   { value: 'audio', icon: Headphones, labelKey: 'workspace.audio' },
+  { value: 'music', icon: Music2, labelKey: 'workspace.music' },
   { value: 'artifact', icon: Archive, labelKey: 'workspace.artifact' },
 ];
 

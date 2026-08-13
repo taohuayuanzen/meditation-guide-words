@@ -5,7 +5,8 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import setup_logging
 from app.db import create_tables, init_db
-from app.routers import artifacts, audio_tasks, dify_proxy, scripts, settings
+from app.db_migrations import migrate_database
+from app.routers import artifacts, audio_tasks, dify_proxy, music_tasks, scripts, settings
 
 setup_logging()
 
@@ -14,6 +15,7 @@ setup_logging()
 async def lifespan(app: FastAPI):
     init_db()
     await create_tables()
+    await migrate_database()
     yield
 
 
@@ -40,5 +42,6 @@ async def health_check():
 app.include_router(settings.router, prefix="/api/settings", tags=["settings"])
 app.include_router(scripts.router, prefix="/api/scripts", tags=["scripts"])
 app.include_router(audio_tasks.router, prefix="/api/audio-tasks", tags=["audio-tasks"])
+app.include_router(music_tasks.router, prefix="/api/music-tasks", tags=["music-tasks"])
 app.include_router(artifacts.router, prefix="/api/artifacts", tags=["artifacts"])
 app.include_router(dify_proxy.router, prefix="/api/dify", tags=["dify"])

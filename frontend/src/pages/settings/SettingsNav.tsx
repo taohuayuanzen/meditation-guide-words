@@ -1,4 +1,4 @@
-import { Bot, Brain, SlidersHorizontal, Volume2 } from 'lucide-react';
+import { Bot, Brain, Music2, SlidersHorizontal, Volume2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { NavLink } from 'react-router-dom';
 
@@ -9,6 +9,7 @@ const NAV_ITEMS: { key: SettingsSection; to: string; labelKey: string; icon: Rea
   [
     { key: 'llm_config', to: '/settings/llm', labelKey: 'settings.llm', icon: Brain },
     { key: 'tts_config', to: '/settings/tts', labelKey: 'settings.tts', icon: Volume2 },
+    { key: 'music_config', to: '/settings/music', labelKey: 'settings.music', icon: Music2 },
     { key: 'dify_config', to: '/settings/dify', labelKey: 'settings.dify', icon: Bot },
     {
       key: 'general_config',
