@@ -30,13 +30,31 @@
 
 ```bash
 # Windows
-scripts\start.bat
+.\start.ps1
+
+# 首次启动（安装/同步依赖）
+.\start.ps1 -Install
+
+# 也可双击或命令行调用包装器
+start.bat
 
 # macOS / Linux
-bash scripts/start.sh
+# 请按下方“手动启动”执行
 ```
 
-脚本会：检查并尝试启动 Dify → 启动后端 → 启动 Worker → 启动前端。可通过环境变量 `DIFY_DIR` 指定 Dify 目录。
+脚本会：检查并尝试启动 Dify → 校验后端、Worker、前端并仅启动未运行的服务。后端、Worker、前端分别在独立 PowerShell 窗口中运行。若 Dify 已运行则直接复用；仅当 Dify 未就绪且无法从本地目录启动时失败退出。可通过环境变量 `DIFY_DIR` 指定 Dify 根目录，例如 `C:\projects\github\dify\dify-1.16.1`；其下须存在 `docker\\docker-compose.yml` 或 `docker\\docker-compose.yaml`。
+
+若 Dify 位于 `C:\projects\github\dify\dify-1.16.1`，可在 PowerShell 中设置用户级环境变量：
+
+```powershell
+[Environment]::SetEnvironmentVariable(
+  'DIFY_DIR',
+  'C:\projects\github\dify\dify-1.16.1',
+  'User'
+)
+```
+
+设置后请重新打开终端或资源管理器，再运行 `start.bat` 或 `./start.ps1`。
 
 ### 方式二：手动启动
 
@@ -44,11 +62,11 @@ bash scripts/start.sh
 # 终端 1：后端
 cd backend
 uv sync
-uv run uvicorn app.main:app --reload --port 8000
+.\.venv\Scripts\python.exe -m uvicorn app.main:app --reload --port 8000
 
 # 终端 2：音频 Worker（生成音频时需要）
 cd backend
-uv run python -m app.services.audio_worker
+.\.venv\Scripts\python.exe -m app.services.audio_worker
 
 # 终端 3：前端
 cd frontend
@@ -109,8 +127,8 @@ npm run build          # 类型检查 + 生产构建
 
 | 问题 | 处理 |
 |---|---|
-| 页面对话返回 `[HTTP 502]` | 后端未启动：`cd backend && uv run uvicorn app.main:app --port 8000` |
-| 音频任务一直 `pending` | Worker 未启动：`uv run python -m app.services.audio_worker` |
+| 页面对话返回 `[HTTP 502]` | 后端未启动：`cd backend && .\.venv\Scripts\python.exe -m uvicorn app.main:app --port 8000` |
+| 音频任务一直 `pending` | Worker 未启动：`.\.venv\Scripts\python.exe -m app.services.audio_worker` |
 | 任务 `failed`（`no such column: retry_count`） | 数据库需重建：删除 `backend/data/meditation.db` 后重启后端 |
 | `test-tts` 失败 | 按 `docs/ops/t5-tts-operations.md` 核对凭证（火山需 AK/SK + AppID） |
 | Dify 相关接口报"配置未完成" | 在设置页配置 Dify 两个 App 的 API Key |

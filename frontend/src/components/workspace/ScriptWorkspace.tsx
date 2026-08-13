@@ -5,6 +5,16 @@ import { useTranslation } from 'react-i18next';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Button } from '@/components/ui/button';
 import { AutoResizeTextarea } from '@/components/ui/auto-resize-textarea';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { ChatMessage } from '@/components/workspace/ChatMessage';
 import { ScriptEmptyState } from '@/components/workspace/ScriptEmptyState';
 import { useToast } from '@/hooks/useToast';
@@ -27,6 +37,9 @@ export function ScriptWorkspace() {
   const [conversationId, setConversationId] = useState('');
   const [error, setError] = useState('');
   const [errorTitle, setErrorTitle] = useState('');
+  const [scriptToSave, setScriptToSave] = useState<string | null>(null);
+  const [scriptTitle, setScriptTitle] = useState('');
+  const [isSaving, setIsSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
   const idRef = useRef(0);
   const abortRef = useRef<AbortController | null>(null);
@@ -136,17 +149,34 @@ export function ScriptWorkspace() {
     abortRef.current?.abort();
   };
 
-  const handleSaveMessage = async (content: string) => {
+  const closeSaveDialog = () => {
+    if (isSaving) return;
+    setScriptToSave(null);
+    setScriptTitle('');
+  };
+
+  const openSaveDialog = (content: string) => {
+    setScriptToSave(content);
+    setScriptTitle('');
+  };
+
+  const handleSaveMessage = async () => {
+    if (!scriptToSave || !scriptTitle.trim() || isSaving) return;
+    setIsSaving(true);
     try {
       await createScript({
-        title: `${t('chat.save')} ${new Date().toLocaleString()}`,
-        content,
+        title: scriptTitle.trim(),
+        content: scriptToSave,
         session_id: conversationId || null,
       });
       success(t('chat.saved'));
+      setScriptToSave(null);
+      setScriptTitle('');
     } catch (err) {
       const detail = err instanceof Error ? err.message : t('chat.saveFailed');
       showError(detail);
+    } finally {
+      setIsSaving(false);
     }
   };
 
@@ -187,7 +217,7 @@ export function ScriptWorkspace() {
                   isAssistantStreaming && msg.id === lastAssistant?.id && msg.role === 'assistant'
                 }
                 onSave={
-                  msg.role === 'assistant' ? () => void handleSaveMessage(msg.content) : undefined
+                  msg.role === 'assistant' ? () => openSaveDialog(msg.content) : undefined
                 }
               />
             ))
@@ -221,6 +251,36 @@ export function ScriptWorkspace() {
           )}
         </div>
       </div>
+
+      <Dialog open={scriptToSave !== null} onOpenChange={(open) => !open && closeSaveDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('chat.saveDialogTitle')}</DialogTitle>
+            <DialogDescription>{t('chat.saveDialogHint')}</DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-2">
+            <Label htmlFor="script-title">{t('chat.scriptName')}</Label>
+            <Input
+              id="script-title"
+              autoFocus
+              value={scriptTitle}
+              onChange={(e) => setScriptTitle(e.target.value)}
+              placeholder={t('chat.scriptNamePlaceholder')}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') void handleSaveMessage();
+              }}
+            />
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={closeSaveDialog} disabled={isSaving}>
+              {t('common.cancel')}
+            </Button>
+            <Button onClick={() => void handleSaveMessage()} disabled={isSaving || !scriptTitle.trim()}>
+              {isSaving ? t('common.saving') : t('common.confirm')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

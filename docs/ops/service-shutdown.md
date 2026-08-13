@@ -4,7 +4,7 @@
 > **目标读者**：AI Agent 按步骤执行；人类可参考备注理解
 > **涉及服务**：前端（Vite）、音频 Worker、后端（FastAPI）、Dify
 > **固定路径**：
-> - 项目根目录：`C:\projects\apps\meditation-guide-words`
+> - 项目根目录：`C:\projects\apps\meditation-guide-studio`
 > - Dify 目录：`C:\projects\github\dify\dify-1.16.1`
 >
 > 若路径不同，请全局替换后再执行。
