@@ -1,4 +1,4 @@
-import { Download, RotateCcw } from 'lucide-react';
+import { RotateCcw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -33,8 +33,8 @@ export function TaskItem({ task, script, onRetry }: TaskItemProps) {
 
   return (
     <div className="flex flex-col gap-3 rounded-2xl border bg-card p-4">
-      <div className="flex items-start justify-between gap-2">
-        <div className="min-w-0 flex-1">
+      <div className="flex flex-col gap-3">
+        <div className="min-w-0">
           <div className="font-semibold">
             {t('audio.task')} #{task.id} · {scriptTitle}
           </div>
@@ -47,23 +47,15 @@ export function TaskItem({ task, script, onRetry }: TaskItemProps) {
           </div>
           {task.error_msg ? <div className="text-sm text-destructive">{task.error_msg}</div> : null}
         </div>
-        <div className="flex shrink-0 items-center gap-2">
+        <div className="flex items-center justify-end gap-2">
           {task.status === 'completed' ? (
-            <>
-              {/* biome-ignore lint/a11y/useMediaCaption: generated audio has no captions */}
-              <audio
-                controls
-                preload="none"
-                src={getAudioDownloadUrl(task.id)}
-                className="h-8 w-44"
-              />
-              <Button asChild size="sm" variant="outline">
-                <a href={getAudioDownloadUrl(task.id)} download>
-                  <Download className="h-4 w-4" />
-                  <span className="ml-1 hidden sm:inline">{t('audio.download')}</span>
-                </a>
-              </Button>
-            </>
+            /* biome-ignore lint/a11y/useMediaCaption: generated audio has no captions */
+            <audio
+              controls
+              preload="none"
+              src={getAudioDownloadUrl(task.id)}
+              className="h-8 w-44"
+            />
           ) : null}
           {task.status === 'failed' ? (
             <Button size="sm" variant="outline" onClick={() => onRetry(task.id)}>

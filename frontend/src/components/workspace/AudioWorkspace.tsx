@@ -1,8 +1,8 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
-import { RefreshCw } from 'lucide-react';
+import { ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import {
   Select,
@@ -33,12 +33,18 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState('');
   const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [isTaskListExpanded, setIsTaskListExpanded] = useState(false);
+  const hasInitializedTaskList = useRef(false);
 
   const refreshTasks = useCallback(async () => {
     try {
       const updated = await fetchAudioTasks();
       setTasks(updated);
       setLastUpdated(new Date());
+      if (!hasInitializedTaskList.current) {
+        setIsTaskListExpanded(updated.length > 0);
+        hasInitializedTaskList.current = true;
+      }
     } catch (err) {
       console.error('refresh audio tasks failed', err);
     }
@@ -115,63 +121,71 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
     : null;
 
   return (
-    <div className="mx-auto flex h-full w-full max-w-3xl flex-col gap-6 overflow-hidden p-6">
-      <div className="shrink-0">
-        <label htmlFor="script-select" className="mb-1 block text-sm font-medium">
-          {t('audio.selectScript')}
-        </label>
-        <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
-          <SelectTrigger id="script-select" className="w-full">
-            <SelectValue placeholder={t('audio.selectPlaceholder')} />
-          </SelectTrigger>
-          <SelectContent>
-            {scripts.map((script) => (
-              <SelectItem key={script.id} value={String(script.id)}>
-                {script.title}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        {scripts.length === 0 ? (
-          <p className="mt-1 text-sm text-muted-foreground">{t('audio.noScripts')}</p>
-        ) : null}
-      </div>
-
-      {selectedScript ? (
-        <div className="shrink-0 space-y-2">
-          <label htmlFor="script-preview" className="block text-sm font-medium">
-            {t('audio.scriptPreview')}
+    <div className="mx-auto flex h-full w-full max-w-7xl gap-6 overflow-hidden p-6">
+      <div className="flex min-w-0 flex-1 flex-col gap-6 overflow-y-auto">
+        <div className="shrink-0">
+          <label htmlFor="script-select" className="mb-1 block text-sm font-medium">
+            {t('audio.selectScript')}
           </label>
-          <Textarea
-            id="script-preview"
-            value={selectedScript.content}
-            readOnly
-            rows={6}
-            className="bg-muted"
-          />
+          <Select value={selectedScriptId} onValueChange={setSelectedScriptId}>
+            <SelectTrigger id="script-select" className="w-full">
+              <SelectValue placeholder={t('audio.selectPlaceholder')} />
+            </SelectTrigger>
+            <SelectContent>
+              {scripts.map((script) => (
+                <SelectItem key={script.id} value={String(script.id)}>
+                  {script.title}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+          {scripts.length === 0 ? (
+            <p className="mt-1 text-sm text-muted-foreground">{t('audio.noScripts')}</p>
+          ) : null}
         </div>
-      ) : null}
 
-      <div className="flex shrink-0 items-stretch gap-3">
-        <Textarea
-          value={voicePrompt}
-          onChange={(e) => setVoicePrompt(e.target.value)}
-          placeholder={t('audio.voicePromptPlaceholder')}
-          className="flex-1"
-          rows={2}
-        />
-        <Button
-          onClick={() => void handleGenerate()}
-          disabled={isGenerating || !selectedScript || voicePrompt.trim() === ''}
-          className="self-stretch"
-        >
-          {isGenerating ? t('audio.parsing') : t('audio.generate')}
-        </Button>
+        {selectedScript ? (
+          <div className="shrink-0 space-y-2">
+            <label htmlFor="script-preview" className="block text-sm font-medium">
+              {t('audio.scriptPreview')}
+            </label>
+            <Textarea
+              id="script-preview"
+              value={selectedScript.content}
+              readOnly
+              rows={6}
+              className="bg-muted"
+            />
+          </div>
+        ) : null}
+
+        <div className="flex shrink-0 items-stretch gap-3">
+          <Textarea
+            value={voicePrompt}
+            onChange={(e) => setVoicePrompt(e.target.value)}
+            placeholder={t('audio.voicePromptPlaceholder')}
+            className="flex-1"
+            rows={2}
+          />
+          <Button
+            onClick={() => void handleGenerate()}
+            disabled={isGenerating || !selectedScript || voicePrompt.trim() === ''}
+            className="self-stretch"
+          >
+            {isGenerating ? t('audio.parsing') : t('audio.generate')}
+          </Button>
+        </div>
+
+        {error ? <p className="shrink-0 text-sm font-medium text-destructive">{error}</p> : null}
       </div>
 
-      {error ? <p className="shrink-0 text-sm font-medium text-destructive">{error}</p> : null}
-
-      <ScrollArea className="flex-1 rounded-2xl border bg-card p-4">
+      <aside
+        className={`flex shrink-0 flex-col transition-[width] duration-200 ${
+          isTaskListExpanded ? 'w-[30rem]' : 'w-9'
+        }`}
+      >
+        {isTaskListExpanded ? (
+          <ScrollArea className="flex-1 rounded-2xl border bg-card p-4">
         <div className="mb-4 flex items-center justify-between">
           <h3 className="text-lg font-semibold">{t('audio.taskList')}</h3>
           <div className="flex items-center gap-2">
@@ -189,6 +203,15 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
             >
               <RefreshCw className="h-4 w-4" />
             </Button>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-9 w-9"
+              onClick={() => setIsTaskListExpanded(false)}
+              aria-label={t('audio.collapseTaskList')}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
           </div>
         </div>
         <div className="space-y-3">
@@ -205,7 +228,18 @@ export function AudioWorkspace({ active }: AudioWorkspaceProps) {
             ))
           )}
         </div>
-      </ScrollArea>
+          </ScrollArea>
+        ) : (
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setIsTaskListExpanded(true)}
+            aria-label={t('audio.expandTaskList')}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
+        )}
+      </aside>
     </div>
   );
 }

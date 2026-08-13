@@ -1,6 +1,6 @@
 {
   "app": {
-    "name": "冥想引导工作台",
+    "name": "冥想音频工作台",
     "shortName": "冥想"
   },
   "sidebar": {
@@ -9,8 +9,8 @@
     "expand": "展开侧边栏"
   },
   "workspace": {
-    "script": "引导词生成",
-    "audio": "音频生成",
+    "script": "引导词",
+    "audio": "引导音频",
     "artifact": "产物"
   },
   "chat": {
@@ -45,10 +45,10 @@
     "noScripts": "暂无已保存的引导词，请先在工作区 1 生成并保存",
     "scriptPreview": "引导词预览",
     "voicePromptPlaceholder": "描述你想要的声音风格，例如：温柔女声，语速慢，正念风格",
-    "generate": "生成音频",
+    "generate": "生成引导音频",
     "generating": "解析中…",
     "parsing": "正在解析声音参数…",
-    "taskCreated": "已提交音频生成任务",
+    "taskCreated": "已提交引导音频生成任务",
     "taskList": "任务列表",
     "emptyTasks": "暂无任务",
     "task": "任务",
@@ -59,18 +59,20 @@
     "download": "下载",
     "retry": "重试",
     "refresh": "刷新",
+    "expandTaskList": "展开任务列表",
+    "collapseTaskList": "收起任务列表",
     "lastUpdated": "最后更新：{{seconds}} 秒前",
     "createdAt": "创建于",
     "completedAt": "完成于",
     "voicePrompt": "声音描述",
     "unknownScript": "未知引导词",
     "parseError": "声音描述不清晰，请重试",
-    "createError": "创建音频任务失败"
+    "createError": "创建引导音频任务失败"
   },
   "artifact": {
     "title": "产物",
     "all": "全部",
-    "audio": "音频",
+    "audio": "引导音频",
     "script": "引导词",
     "empty": "暂无产物",
     "download": "下载",
@@ -164,7 +166,7 @@
     "outputFormat": "输出格式",
     "difyBaseUrl": "Dify Base URL",
     "scriptAppKey": "引导词 App Key（App A）",
-    "audioAppKey": "音频 App Key（App B）",
+    "audioAppKey": "引导音频 App Key（App B）",
     "difyHint": "Dify 的模型配置在 Dify 后台完成，这里只保存连接两个应用的 API Key",
     "language": "语言",
     "langZh": "中文",
@@ -172,7 +174,7 @@
     "theme": "主题",
     "themeLight": "浅色",
     "themeDark": "深色",
-    "audioOutputDir": "音频保存目录",
+    "audioOutputDir": "引导音频保存目录",
     "invalidUrl": "请输入以 http:// 或 https:// 开头的 URL",
     "required": "此项为必填",
     "invalidRange": "数值不在有效范围内",

@@ -59,6 +59,8 @@
     "download": "Download",
     "retry": "Retry",
     "refresh": "Refresh",
+    "expandTaskList": "Expand task list",
+    "collapseTaskList": "Collapse task list",
     "lastUpdated": "Last updated: {{seconds}}s ago",
     "createdAt": "Created at",
     "completedAt": "Completed at",
