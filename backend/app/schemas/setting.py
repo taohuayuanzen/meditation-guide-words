@@ -68,7 +68,7 @@ class MiniMaxMusicConfig(BaseModel):
     api_key: str = ""
     base_url: str = "https://api.minimaxi.com/v1"
     model: Literal["music-3.0"] = "music-3.0"
-    source_format: Literal["mp3"] = "mp3"
+    source_format: Literal["mp3", "wav"] = "mp3"
 
     @field_validator("base_url")
     @classmethod

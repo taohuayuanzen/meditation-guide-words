@@ -32,6 +32,10 @@ function stringValue(value: unknown, fallback = ''): string {
   return typeof value === 'string' ? value : fallback;
 }
 
+function miniMaxSourceFormat(value: unknown): MiniMaxMusicConfig['source_format'] {
+  return value === 'wav' ? 'wav' : 'mp3';
+}
+
 export function normalizeMusicConfig(value: unknown): MusicConfig {
   const raw = asRecord(value);
   const hasNestedConfig = raw.aliyun !== undefined || raw.minimax !== undefined;
@@ -59,6 +63,7 @@ export function normalizeMusicConfig(value: unknown): MusicConfig {
       ...DEFAULT_MINIMAX_MUSIC_CONFIG,
       api_key: stringValue(rawMiniMax.api_key),
       base_url: stringValue(rawMiniMax.base_url, DEFAULT_MINIMAX_MUSIC_CONFIG.base_url),
+      source_format: miniMaxSourceFormat(rawMiniMax.source_format),
     },
   };
 }

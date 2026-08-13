@@ -20,7 +20,8 @@ def _success_body():
     }
 
 
-async def test_minimax_request_and_success_response():
+@pytest.mark.parametrize("source_format", ["mp3", "wav"])
+async def test_minimax_request_and_success_response(source_format):
     captured = {}
 
     def handler(request: httpx.Request):
@@ -29,7 +30,11 @@ async def test_minimax_request_and_success_response():
         return httpx.Response(200, json=_success_body())
 
     result = await generate_music(
-        {"api_key": "secret", "base_url": "https://api.minimaxi.com/v1"},
+        {
+            "api_key": "secret",
+            "base_url": "https://api.minimaxi.com/v1",
+            "source_format": source_format,
+        },
         "创作适合纯音乐。安静、舒缓。",
         transport=httpx.MockTransport(handler),
     )
@@ -43,7 +48,7 @@ async def test_minimax_request_and_success_response():
         "prompt": "创作适合纯音乐。安静、舒缓。",
         "stream": False,
         "output_format": "url",
-        "audio_setting": {"sample_rate": 44100, "bitrate": 256000, "format": "mp3"},
+        "audio_setting": {"sample_rate": 44100, "bitrate": 256000, "format": source_format},
         "aigc_watermark": False,
         "lyrics_optimizer": False,
         "is_instrumental": True,
@@ -54,7 +59,7 @@ async def test_minimax_request_and_success_response():
     assert result.duration_seconds == 25
     assert result.sample_rate == 44100
     assert result.channels == 2
-    assert result.source_format == "mp3"
+    assert result.source_format == source_format
     assert result.estimated_cost is None
 
 
@@ -62,6 +67,12 @@ async def test_minimax_request_and_success_response():
 async def test_minimax_prompt_length_is_validated_without_http(prompt):
     with pytest.raises(MusicServiceError) as error:
         await generate_music({"api_key": "secret"}, prompt)
+    assert error.value.code == "MUSIC_REQUEST_INVALID"
+
+
+async def test_minimax_rejects_unsupported_source_format_without_http():
+    with pytest.raises(MusicServiceError) as error:
+        await generate_music({"api_key": "secret", "source_format": "flac"}, "prompt")
     assert error.value.code == "MUSIC_REQUEST_INVALID"
 
 

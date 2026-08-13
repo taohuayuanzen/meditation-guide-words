@@ -68,7 +68,7 @@ export interface MiniMaxMusicConfig {
   api_key: string;
   base_url: string;
   model: 'music-3.0';
-  source_format: 'mp3';
+  source_format: 'mp3' | 'wav';
 }
 
 export interface MusicConfig {

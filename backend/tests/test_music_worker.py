@@ -272,7 +272,7 @@ async def test_minimax_generation_failure_is_never_automatically_retried(
                 id=1,
                 music_config={
                     "provider": "minimax",
-                    "minimax": {"api_key": "key"},
+                    "minimax": {"api_key": "key", "source_format": "mp3"},
                     "aliyun": {},
                 },
             )
@@ -282,13 +282,14 @@ async def test_minimax_generation_failure_is_never_automatically_retried(
         db_session,
         provider="minimax",
         model="music-3.0",
-        source_format="mp3",
+        source_format="wav",
     )
     calls = 0
 
     async def fail(config, prompt):
         nonlocal calls
         calls += 1
+        assert config["source_format"] == "wav"
         raise MusicServiceError("MUSIC_TIMEOUT", "timeout", retryable=True)
 
     await process_task(

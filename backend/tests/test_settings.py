@@ -38,6 +38,7 @@ async def test_save_settings(client):
     payload["llm_config"]["api_key"] = "sk-test"
     payload["dify_config"]["script_app_key"] = "app-xxx"
     payload["music_config"]["minimax"]["api_key"] = "minimax-key"
+    payload["music_config"]["minimax"]["source_format"] = "wav"
     payload["music_config"]["aliyun"]["api_key"] = "music-key"
     payload["music_config"]["aliyun"]["workspace_id"] = "workspace"
     resp = await client.post("/api/settings", json=payload)
@@ -48,6 +49,7 @@ async def test_save_settings(client):
     assert resp.json()["llm_config"]["api_key"] == "sk-test"
     assert resp.json()["dify_config"]["script_app_key"] == "app-xxx"
     assert resp.json()["music_config"]["minimax"]["api_key"] == "minimax-key"
+    assert resp.json()["music_config"]["minimax"]["source_format"] == "wav"
     assert resp.json()["music_config"]["aliyun"]["api_key"] == "music-key"
 
 

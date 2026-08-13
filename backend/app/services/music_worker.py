@@ -57,6 +57,7 @@ async def process_task(
         supported = {
             ("aliyun", "fun-music-v1", "wav"),
             ("minimax", "music-3.0", "mp3"),
+            ("minimax", "music-3.0", "wav"),
         }
         if (task.provider, task.model, task.source_format) not in supported:
             await _mark_failed(
@@ -163,6 +164,7 @@ async def _run_generation(
             f"缺少 {task.provider} 音乐供应商配置",
         )
         return
+    provider_config = {**provider_config, "source_format": task.source_format}
     try:
         if generate is generate_music:
             result = await generate(

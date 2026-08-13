@@ -31,13 +31,16 @@ async def generate_music(
         raise MusicServiceError("MUSIC_REQUEST_INVALID", "音乐 Prompt 长度必须为 1～2000 个字符")
 
     base_url = str(config.get("base_url") or DEFAULT_BASE_URL).strip().rstrip("/")
+    source_format = str(config.get("source_format") or "mp3").lower()
+    if source_format not in {"mp3", "wav"}:
+        raise MusicServiceError("MUSIC_REQUEST_INVALID", "MiniMax 音乐源格式仅支持 mp3 或 wav")
     url = f"{base_url}/music_generation"
     payload = {
         "model": MINIMAX_MODEL,
         "prompt": prompt,
         "stream": False,
         "output_format": "url",
-        "audio_setting": {"sample_rate": 44100, "bitrate": 256000, "format": "mp3"},
+        "audio_setting": {"sample_rate": 44100, "bitrate": 256000, "format": source_format},
         "aigc_watermark": False,
         "lyrics_optimizer": False,
         "is_instrumental": True,
@@ -100,7 +103,7 @@ async def generate_music(
         duration_seconds=round(duration_ms / 1000),
         sample_rate=sample_rate,
         channels=channels,
-        source_format="mp3",
+        source_format=source_format,
         estimated_cost=None,
     )
 

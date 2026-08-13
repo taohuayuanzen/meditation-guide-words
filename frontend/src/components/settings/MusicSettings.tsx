@@ -115,7 +115,28 @@ export function MusicSettings({ value, ttsConfig, errors, onChange }: MusicSetti
 
       <div className="grid gap-4 sm:grid-cols-3">
         <ReadOnlyField label={t('settings.model')} value={active.model} />
-        <ReadOnlyField label={t('settings.sourceFormat')} value={active.source_format.toUpperCase()} />
+        {normalizedValue.provider === 'minimax' ? (
+          <div className="space-y-2">
+            <Label htmlFor="music-source-format">{t('settings.sourceFormat')}</Label>
+            <Select
+              value={normalizedValue.minimax.source_format}
+              onValueChange={(source_format: 'mp3' | 'wav') => updateActive({ source_format })}
+            >
+              <SelectTrigger id="music-source-format">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="mp3">MP3</SelectItem>
+                <SelectItem value="wav">WAV</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <ReadOnlyField
+            label={t('settings.sourceFormat')}
+            value={normalizedValue.aliyun.source_format.toUpperCase()}
+          />
+        )}
         <ReadOnlyField label={t('settings.finalFormat')} value="MP3" />
       </div>
       {normalizedValue.provider === 'minimax' ? (

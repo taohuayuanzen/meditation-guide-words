@@ -236,6 +236,7 @@ async def test_minimax_task_snapshot_and_regeneration_requires_confirmation(
                     "minimax": {
                         "api_key": "minimax-secret",
                         "base_url": "https://api.minimaxi.com/v1",
+                        "source_format": "wav",
                     },
                     "aliyun": {
                         "api_key": "aliyun-secret",
@@ -251,7 +252,7 @@ async def test_minimax_task_snapshot_and_regeneration_requires_confirmation(
     data = created.json()
     assert data["provider"] == "minimax"
     assert data["model"] == "music-3.0"
-    assert data["source_format"] == "mp3"
+    assert data["source_format"] == "wav"
     assert data["estimated_cost"] is None
 
     task_id = data["id"]
