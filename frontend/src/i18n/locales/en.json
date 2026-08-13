@@ -90,7 +90,11 @@
     "renameFailed": "Failed to rename",
     "deleted": "Deleted",
     "deleteFailed": "Failed to delete",
-    "deleteTitle": "Delete Artifact"
+    "deleteTitle": "Delete Artifact",
+    "paginationSummary": "{{from}}–{{to}} of {{total}}",
+    "previousPage": "Previous",
+    "nextPage": "Next",
+    "pageIndicator": "Page {{page}} of {{totalPages}}"
   },
   "common": {
     "loading": "Loading…",

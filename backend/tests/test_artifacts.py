@@ -61,7 +61,9 @@ async def test_list_artifacts(client, artifact_dirs, db_session):
 
     resp = await client.get("/api/artifacts")
     assert resp.status_code == 200
-    items = resp.json()
+    body = resp.json()
+    assert body["total"] == 2
+    items = body["items"]
     assert len(items) == 2
 
     audio_items = [i for i in items if i["type"] == "audio"]
@@ -85,7 +87,36 @@ async def test_list_artifacts_filter_by_type(client, artifact_dirs, db_session):
 
     resp = await client.get("/api/artifacts?type=audio")
     assert resp.status_code == 200
-    assert all(i["type"] == "audio" for i in resp.json())
+    assert resp.json()["total"] == 1
+    assert all(i["type"] == "audio" for i in resp.json()["items"])
+
+
+async def test_list_artifacts_paginates_by_created_time(client, artifact_dirs):
+    _, script_dir = artifact_dirs
+    scripts = []
+    for index in range(21):
+        scripts.append(await _create_script(client, title=f"引导词 {index}", content="内容"))
+
+    resp = await client.get("/api/artifacts?type=script&page=1&page_size=20")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert body["total"] == 21
+    assert len(body["items"]) == 20
+    assert body["items"][0]["script_id"] == scripts[-1]["id"]
+    assert body["items"][-1]["script_id"] == scripts[1]["id"]
+
+    resp = await client.get("/api/artifacts?type=script&page=2&page_size=20")
+    assert resp.status_code == 200
+    body = resp.json()
+    assert len(body["items"]) == 1
+    assert body["items"][0]["script_id"] == scripts[0]["id"]
+
+    orphan_path = os.path.join(script_dir, "孤立文件.md")
+    with open(orphan_path, "w", encoding="utf-8") as f:
+        f.write("内容")
+    resp = await client.get("/api/artifacts?type=script&page=1&page_size=20")
+    assert resp.status_code == 200
+    assert resp.json()["items"][0]["name"] == "孤立文件.md"
 
 
 async def test_download_script(client):

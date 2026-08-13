@@ -15,11 +15,22 @@ export interface Artifact {
 
 export type ArtifactType = 'all' | 'audio' | 'script';
 
-export async function fetchArtifacts(type: ArtifactType = 'all'): Promise<Artifact[]> {
-  const url = type === 'all' ? '/api/artifacts' : `/api/artifacts?type=${type}`;
+export interface ArtifactListResponse {
+  items: Artifact[];
+  total: number;
+}
+
+export async function fetchArtifacts(
+  type: ArtifactType = 'all',
+  page = 1,
+  pageSize = 20,
+): Promise<ArtifactListResponse> {
+  const params = new URLSearchParams({ page: String(page), page_size: String(pageSize) });
+  if (type !== 'all') params.set('type', type);
+  const url = `/api/artifacts?${params.toString()}`;
   const res = await fetch(url);
   if (!res.ok) throw new Error(`Failed to fetch artifacts: HTTP ${res.status}`);
-  return (await res.json()) as Artifact[];
+  return (await res.json()) as ArtifactListResponse;
 }
 
 export function getArtifactDownloadUrl(id: string): string {

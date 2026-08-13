@@ -1,5 +1,14 @@
-import { Download, FileText, Headphones, Pencil, RefreshCw, Trash2 } from 'lucide-react';
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import {
+  ChevronLeft,
+  ChevronRight,
+  Download,
+  FileText,
+  Headphones,
+  Pencil,
+  RefreshCw,
+  Trash2,
+} from 'lucide-react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -28,6 +37,8 @@ interface ArtifactWorkspaceProps {
   active: boolean;
 }
 
+const PAGE_SIZE = 20;
+
 function formatTime(iso?: string | null) {
   if (!iso) return '';
   return new Date(iso).toLocaleString();
@@ -43,6 +54,8 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
   const { success, error: showError } = useToast();
   const [artifacts, setArtifacts] = useState<Artifact[]>([]);
   const [activeTab, setActiveTab] = useState<ArtifactType>('all');
+  const [page, setPage] = useState(1);
+  const [total, setTotal] = useState(0);
   const [loading, setLoading] = useState(false);
 
   const [renameArtifactId, setRenameArtifactId] = useState<string | null>(null);
@@ -56,27 +69,29 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
   const loadArtifacts = useCallback(async () => {
     setLoading(true);
     try {
-      const items = await fetchArtifacts(activeTab);
-      setArtifacts(items);
+      const result = await fetchArtifacts(activeTab, page, PAGE_SIZE);
+      setArtifacts(result.items);
+      setTotal(result.total);
     } catch (err) {
       console.error('fetch artifacts failed', err);
       showError(err instanceof Error ? err.message : t('artifact.loadFailed'));
     } finally {
       setLoading(false);
     }
-  }, [activeTab, showError, t]);
+  }, [activeTab, page, showError, t]);
 
   useEffect(() => {
     if (!active) return;
     void loadArtifacts();
   }, [active, loadArtifacts]);
 
-  const groupedArtifacts = useMemo(() => {
-    return artifacts;
-  }, [artifacts]);
-
   const handleRefresh = () => {
     void loadArtifacts();
+  };
+
+  const handleTabChange = (value: string) => {
+    setActiveTab(value as ArtifactType);
+    setPage(1);
   };
 
   const openRename = (artifact: Artifact) => {
@@ -128,7 +143,11 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
       await deleteArtifact(deleteArtifactId);
       success(t('artifact.deleted'));
       closeDelete();
-      await loadArtifacts();
+      if (artifacts.length === 1 && page > 1) {
+        setPage((currentPage) => currentPage - 1);
+      } else {
+        await loadArtifacts();
+      }
     } catch (err) {
       const message = err instanceof Error ? err.message : t('artifact.deleteFailed');
       showError(message);
@@ -136,6 +155,10 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
       setDeleteBusy(false);
     }
   };
+
+  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
+  const firstItemIndex = total === 0 ? 0 : (page - 1) * PAGE_SIZE + 1;
+  const lastItemIndex = Math.min(page * PAGE_SIZE, total);
 
   const renderList = (items: Artifact[]) => {
     if (items.length === 0) {
@@ -223,7 +246,7 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
 
       <Tabs
         value={activeTab}
-        onValueChange={(v) => setActiveTab(v as ArtifactType)}
+        onValueChange={handleTabChange}
         className="flex flex-1 flex-col overflow-hidden"
       >
         <TabsList className="w-fit">
@@ -233,9 +256,37 @@ export function ArtifactWorkspace({ active }: ArtifactWorkspaceProps) {
         </TabsList>
         <div className="mt-4 flex-1 overflow-hidden">
           <ScrollArea className="h-full rounded-2xl border bg-card p-4">
-            {renderList(groupedArtifacts)}
+            {renderList(artifacts)}
           </ScrollArea>
         </div>
+        {total > 0 ? (
+          <div className="mt-4 flex shrink-0 items-center justify-between gap-3 text-sm text-muted-foreground">
+            <span>{t('artifact.paginationSummary', { from: firstItemIndex, to: lastItemIndex, total })}</span>
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((currentPage) => currentPage - 1)}
+                disabled={loading || page === 1}
+              >
+                <ChevronLeft className="h-4 w-4" />
+                {t('artifact.previousPage')}
+              </Button>
+              <span className="whitespace-nowrap">
+                {t('artifact.pageIndicator', { page, totalPages })}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setPage((currentPage) => currentPage + 1)}
+                disabled={loading || page === totalPages}
+              >
+                {t('artifact.nextPage')}
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        ) : null}
       </Tabs>
 
       <Dialog open={!!renameArtifactId} onOpenChange={(open) => !open && closeRename()}>

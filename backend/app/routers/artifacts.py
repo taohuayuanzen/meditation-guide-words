@@ -1,5 +1,5 @@
 import os
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import Annotated
 from urllib.parse import quote
 
@@ -19,6 +19,8 @@ router = APIRouter()
 
 DbSession = Annotated[AsyncSession, Depends(get_db)]
 ArtifactTypeFilter = Annotated[str | None, Query(pattern=r"^(audio|script)$")]
+Page = Annotated[int, Query(ge=1)]
+PageSize = Annotated[int, Query(ge=1, le=100)]
 
 
 def _audio_dir() -> str:
@@ -41,9 +43,27 @@ def _format_time(dt: datetime | None) -> str | None:
     return dt.isoformat()
 
 
+def _file_modified_at(file_path: str) -> datetime:
+    return datetime.fromtimestamp(os.path.getmtime(file_path), tz=UTC)
+
+
+def _sort_timestamp(dt: datetime) -> float:
+    if dt.tzinfo is None:
+        return dt.replace(tzinfo=UTC).timestamp()
+    return dt.timestamp()
+
+
 @router.get("")
-async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
+async def list_artifacts(
+    db: DbSession,
+    type: ArtifactTypeFilter = None,
+    page: Page = 1,
+    page_size: PageSize = 20,
+):
     artifacts = []
+    scripts_result = await db.execute(select(Script))
+    scripts = scripts_result.scalars().all()
+    script_by_id = {script.id: script for script in scripts}
 
     # 音频产物：扫描磁盘并关联 audio_tasks
     if type is None or type == "audio":
@@ -56,7 +76,7 @@ async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
                 task_by_basename[os.path.basename(task.file_path)] = task
 
         if os.path.isdir(audio_dir):
-            for filename in sorted(os.listdir(audio_dir)):
+            for filename in os.listdir(audio_dir):
                 file_path = os.path.join(audio_dir, filename)
                 if not os.path.isfile(file_path):
                     continue
@@ -67,11 +87,11 @@ async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
                 if task:
                     task_id = task.id
                     created_at = _format_time(task.created_at)
-                    # 关联引导词标题
-                    script_result = await db.execute(
-                        select(Script.title).where(Script.id == task.script_id)
-                    )
-                    script_title = script_result.scalar_one_or_none()
+                    script = script_by_id.get(task.script_id)
+                    script_title = script.title if script else None
+                sort_time = (
+                    task.created_at if task and task.created_at else _file_modified_at(file_path)
+                )
                 artifacts.append(
                     {
                         "id": f"audio_{task_id or filename}",
@@ -80,18 +100,15 @@ async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
                         "script_title": script_title,
                         "created_at": created_at,
                         "task_id": task_id,
+                        "_sort_time": sort_time,
                     }
                 )
 
     # 引导词产物：扫描磁盘并关联 scripts
     if type is None or type == "script":
         script_dir = _script_dir()
-        scripts_result = await db.execute(select(Script))
-        scripts = scripts_result.scalars().all()
-        script_by_id = {script.id: script for script in scripts}
-
         if os.path.isdir(script_dir):
-            for filename in sorted(os.listdir(script_dir)):
+            for filename in os.listdir(script_dir):
                 if not filename.lower().endswith(".md"):
                     continue
                 file_path = os.path.join(script_dir, filename)
@@ -109,6 +126,11 @@ async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
                         pass
                 title = script.title if script else without_ext
                 created_at = _format_time(script.created_at) if script else None
+                sort_time = (
+                    script.created_at
+                    if script and script.created_at
+                    else _file_modified_at(file_path)
+                )
                 artifacts.append(
                     {
                         "id": f"script_{script_id or filename}",
@@ -117,10 +139,17 @@ async def list_artifacts(db: DbSession, type: ArtifactTypeFilter = None):
                         "title": title,
                         "created_at": created_at,
                         "script_id": script_id,
+                        "_sort_time": sort_time,
                     }
                 )
 
-    return artifacts
+    artifacts.sort(key=lambda artifact: _sort_timestamp(artifact["_sort_time"]), reverse=True)
+    total = len(artifacts)
+    start = (page - 1) * page_size
+    items = artifacts[start : start + page_size]
+    for artifact in items:
+        artifact.pop("_sort_time", None)
+    return {"items": items, "total": total}
 
 
 @router.get("/{artifact_id}/download")

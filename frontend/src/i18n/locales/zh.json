@@ -90,7 +90,11 @@
     "renameFailed": "重命名失败",
     "deleted": "已删除",
     "deleteFailed": "删除失败",
-    "deleteTitle": "删除产物"
+    "deleteTitle": "删除产物",
+    "paginationSummary": "第 {{from}}–{{to}} 条，共 {{total}} 条",
+    "previousPage": "上一页",
+    "nextPage": "下一页",
+    "pageIndicator": "第 {{page}} / {{totalPages}} 页"
   },
   "common": {
     "loading": "加载中…",
