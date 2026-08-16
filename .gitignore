@@ -28,3 +28,6 @@ backend/data/
 # OS
 .DS_Store
 Thumbs.db
+
+#缓存
+.tmp
