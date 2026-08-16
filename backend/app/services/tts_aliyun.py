@@ -1,6 +1,7 @@
 import base64
 import json
 import logging
+import re
 import unicodedata
 
 import httpx
@@ -8,6 +9,14 @@ import httpx
 from app.services.tts_base import TTSBase
 
 logger = logging.getLogger(__name__)
+
+
+def _safe_provider_message(value) -> str:
+    message = str(value or "provider error")[:200]
+    message = re.sub(
+        r"(?i)(authorization|api[_-]?key|secret)\s*[:=]\s*\S+", r"\1=[REDACTED]", message
+    )
+    return message.replace("\r", " ").replace("\n", " ")
 
 
 class AliyunTTS(TTSBase):
@@ -37,6 +46,9 @@ class AliyunTTS(TTSBase):
         volume=1.0,
         output_format="mp3",
         instruction=None,
+        pitch=1.0,
+        sample_rate=48000,
+        **context,
     ):
         logger.debug(
             "[AliyunTTS] synthesize called: model=%s voice=%s text_len=%s "
@@ -49,11 +61,32 @@ class AliyunTTS(TTSBase):
             volume,
             output_format,
         )
-        if self.model.startswith("sambert"):
-            return await self._synthesize_sambert(text, voice_id, speed, volume, output_format)
-        return await self._synthesize_qwen(
-            text, voice_id, speed, volume, output_format, instruction
-        )
+        try:
+            if self.model.startswith("sambert"):
+                return await self._synthesize_sambert(text, voice_id, speed, volume, output_format)
+            return await self._synthesize_qwen(
+                text,
+                voice_id,
+                speed,
+                volume,
+                output_format,
+                instruction,
+                pitch,
+                sample_rate,
+                bool(context.get("enable_ssml", False)),
+            )
+        except Exception as exc:
+            if context.get("task_id") is None:
+                raise
+            task_id = context["task_id"]
+            segment_index = context.get("segment_index", "unknown")
+            if isinstance(exc, httpx.HTTPStatusError):
+                detail = f"HTTP {exc.response.status_code}"
+            else:
+                detail = exc.__class__.__name__
+            raise RuntimeError(
+                f"阿里云 TTS 失败: task={task_id} segment={segment_index} {detail}"
+            ) from exc
 
     async def _synthesize_sambert(self, text, voice_id, speed, volume, output_format):
         url = f"{self.base_url}/services/aigc/text2audio/generation"
@@ -87,18 +120,33 @@ class AliyunTTS(TTSBase):
         response.raise_for_status()
         return response.content
 
-    async def _synthesize_qwen(self, text, voice_id, speed, volume, output_format, instruction):
+    async def _synthesize_qwen(
+        self,
+        text,
+        voice_id,
+        speed,
+        volume,
+        output_format,
+        instruction,
+        pitch=1.0,
+        sample_rate=48000,
+        enable_ssml=False,
+    ):
         url = f"{self.base_url}/services/audio/tts/SpeechSynthesizer"
         input_payload: dict = {
             "text": text,
             "voice": voice_id,
             "format": output_format,
-            "sample_rate": 48000,
+            "sample_rate": sample_rate,
             "volume": max(0, min(100, int(round(volume * 50)))),
             "rate": max(0.5, min(2.0, float(speed))),
         }
         if instruction and self.model.startswith("qwen-audio"):
             input_payload["instruction"] = _truncate_instruction(instruction)
+        if enable_ssml:
+            input_payload["enable_ssml"] = True
+        if pitch != 1.0:
+            input_payload["pitch"] = pitch
         payload = {"model": self.model, "input": input_payload}
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -140,18 +188,20 @@ class AliyunTTS(TTSBase):
             try:
                 event = json.loads(data)
             except json.JSONDecodeError as exc:
-                logger.error("[AliyunTTS] SSE JSON decode failed: line=%s", raw_line)
-                raise RuntimeError(f"阿里云 TTS SSE 解析失败: {raw_line}") from exc
+                logger.error("[AliyunTTS] SSE JSON decode failed: line_len=%s", len(raw_line))
+                raise RuntimeError("阿里云 TTS SSE 解析失败") from exc
 
             if event.get("code"):
                 logger.error(
-                    "[AliyunTTS] SSE business error: code=%s message=%s request_id=%s",
+                    "[AliyunTTS] SSE business error: code=%s message_len=%s request_id=%s",
                     event.get("code"),
-                    event.get("message"),
+                    len(str(event.get("message") or "")),
                     event.get("request_id"),
                 )
                 raise RuntimeError(
-                    f"阿里云 TTS 合成失败: [{event.get('code')}] {event.get('message', event)}"
+                    f"阿里云 TTS 合成失败: [{event.get('code')}] "
+                    f"{_safe_provider_message(event.get('message'))} "
+                    f"request_id={event.get('request_id', 'unknown')}"
                 )
 
             output = event.get("output") or {}

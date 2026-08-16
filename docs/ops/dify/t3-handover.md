@@ -1,5 +1,7 @@
 # T3 交接文档：Dify 部署与智能体配置
 
+> **历史提示**：本文记录 T3 初始部署，内含的 App A/App B Prompt 已被 T16 协议替代。当前发布操作请使用 [Dify App A / App B 语义停顿 Prompt 发布手册](./publish-pause-semantics-prompts.md)。
+
 > 日期：2026-08-05  
 > 交接原因：切换至家中电脑继续  
 > 关联任务：`docs/task/03-dify-setup.md`

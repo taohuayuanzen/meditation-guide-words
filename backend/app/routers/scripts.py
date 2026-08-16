@@ -9,6 +9,7 @@ from app.config import settings
 from app.db import get_db
 from app.models.script import Script
 from app.schemas.script import ScriptCreate, ScriptListResponse, ScriptResponse
+from app.schemas.script_plan import normalize_script_plan, script_plan_content
 from app.utils.file_utils import ensure_dir, get_script_output_dir, sanitize_filename
 
 router = APIRouter()
@@ -61,7 +62,14 @@ async def list_scripts(db: DbSession, page: Page = None, page_size: PageSize = 2
 
 @router.post("", response_model=ScriptResponse, status_code=201)
 async def create_script(payload: ScriptCreate, db: DbSession):
-    script = Script(**payload.model_dump())
+    data = payload.model_dump(exclude={"script_plan"})
+    if payload.script_plan is not None:
+        plan = normalize_script_plan(payload.script_plan)
+        data["script_plan"] = plan.model_dump()
+        data["content"] = script_plan_content(plan)
+    else:
+        data["content"] = (payload.content or "").strip()
+    script = Script(**data)
     db.add(script)
     await db.commit()
     await db.refresh(script)
@@ -77,7 +85,15 @@ async def get_script(script_id: int, db: DbSession):
 @router.put("/{script_id}", response_model=ScriptResponse)
 async def update_script(script_id: int, payload: ScriptCreate, db: DbSession):
     script = await _get_script_or_404(db, script_id)
-    for key, value in payload.model_dump().items():
+    data = payload.model_dump(exclude={"script_plan"})
+    if payload.script_plan is not None:
+        plan = normalize_script_plan(payload.script_plan)
+        data["script_plan"] = plan.model_dump()
+        data["content"] = script_plan_content(plan)
+    else:
+        data["script_plan"] = None
+        data["content"] = (payload.content or "").strip()
+    for key, value in data.items():
         setattr(script, key, value)
     await db.commit()
     await db.refresh(script)

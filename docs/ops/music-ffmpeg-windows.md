@@ -42,7 +42,16 @@ GET http://localhost:8000/api/music-tasks/capabilities
 }
 ```
 
-FFmpeg 缺失不会阻止后端、引导音频 Worker 或前端启动，但 Music Worker 不会启动，新建纯音乐任务会返回 503。
+FFmpeg 缺失不会阻止后端、引导音频 Worker 或前端启动，但 Music Worker 不会启动，
+新建纯音乐任务和新格式的分段引导音频任务都会返回 503。历史整篇 TTS 任务仍按旧路径处理。
+
+新格式引导音频也可检查：
+
+```text
+GET http://localhost:8000/api/audio-tasks/capabilities
+```
+
+正常结果中的 `audio_rendering_available` 应为 `true`。
 
 ## 3. 启停与恢复
 

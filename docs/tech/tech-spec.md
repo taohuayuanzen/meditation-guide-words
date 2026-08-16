@@ -1,9 +1,9 @@
-# 冥想引导工作台 — 技术规范文档
+# 冥想音频工作台 — 技术规范文档
 
 ## 1. 目标与边界
 
 ### 1.1 文档目标
-本文档固化冥想引导工作台的技术边界、架构设计、接口约定与开发规范，作为后续编码、联调与部署的依据。
+本文档固化冥想音频工作台的技术边界、架构设计、接口约定与开发规范，作为后续编码、联调与部署的依据。
 
 ### 1.2 适用范围
 - 前端：React + TypeScript 单页应用
@@ -185,7 +185,7 @@ D:/project/github/dify/
 | 应用 | Dify 应用名建议 | 用途 |
 |---|---|---|
 | App A | `meditation-script-gen` | 工作区 1：自然语言对话生成冥想引导词 |
-| App B | `meditation-audio-gen` | 工作区 2：解析声音提示词，输出 TTS 参数 |
+| App B | `meditation-audio-gen` | 量化语义停顿与声音描述，输出供应商无关 `render_plan` |
 
 ### 5.3 配置项
 后端 `settings` 表中保存：
@@ -234,7 +234,7 @@ D:/project/github/dify/
 列出所有引导词，支持分页。
 
 #### POST `/api/scripts`
-保存或更新引导词。
+保存引导词。结构化脚本提交 `script_plan`，服务端根据 blocks 生成纯文本 `content`；旧格式仍可只提交 `content`。
 
 #### GET `/api/scripts/{id}`
 获取单条引导词。
@@ -284,6 +284,14 @@ D:/project/github/dify/
 #### POST `/api/dify/audio/chat`
 工作区 2 对话，返回 SSE。
 
+### 6.6 音频编排预览接口
+
+#### GET `/api/audio-render-plans/pause-profiles`
+返回版本化的轻柔、标准、深度停顿档案。
+
+#### POST `/api/audio-render-plans/preview`
+读取结构化 Script，调用 App B，强校验并标准化 `render_plan`，返回 `zh_v1` 预计时长；不创建 AudioTask，不调用 TTS。
+
 ---
 
 ## 7. 数据流详细说明
@@ -296,11 +304,11 @@ D:/project/github/dify/
               ↓
          FastAPI 代理 → Dify App A
               ↓
-         Dify LLM 流式输出
+         Dify LLM 流式输出完整 JSON
               ↓
          FastAPI SSE → 前端
               ↓
-         用户保存为 Script → POST /api/scripts
+         完整 JSON 校验成功后保存 script_plan → POST /api/scripts
               ↓
          SQLite scripts 表
 ```
@@ -340,6 +348,7 @@ class Script(Base):
     id: Mapped[int] = mapped_column(primary_key=True)
     title: Mapped[str]
     content: Mapped[str]
+    script_plan: Mapped[dict | None] = mapped_column(JSON, nullable=True)
     session_id: Mapped[str | None]
     created_at: Mapped[datetime] = mapped_column(default=utc_now)
     updated_at: Mapped[datetime] = mapped_column(default=utc_now, onupdate=utc_now)
@@ -413,7 +422,8 @@ npm run dev --prefix frontend &
 ## 10. TTS 适配层
 
 ### 10.1 设计原则
-- Dify 只负责从自然语言解析出标准化 TTS 参数 JSON。
+- App A 输出正文与语义停顿；App B 只输出标准化、供应商无关的 `render_plan`。
+- 后端复算停顿档案，校验 segment 文本、顺序、策略、音色及数值范围，不信任任意 JSON。
 - 实际 TTS 调用统一走 FastAPI 后端，避免 API Key 暴露在前端或 Dify。
 - 适配层屏蔽火山引擎、阿里云等供应商接口差异。
 

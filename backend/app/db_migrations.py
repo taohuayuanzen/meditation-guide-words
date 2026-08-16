@@ -12,6 +12,41 @@ async def migrate_database(database_engine: AsyncEngine = engine) -> None:
         return
 
     async with database_engine.begin() as conn:
+        audio_table = await conn.exec_driver_sql(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='audio_tasks'"
+        )
+        if audio_table.first() is not None:
+            audio_columns = await conn.exec_driver_sql("PRAGMA table_info(audio_tasks)")
+            audio_names = {row[1] for row in audio_columns.fetchall()}
+            additions = {
+                "render_plan": "JSON",
+                "render_plan_version": "INTEGER",
+                "render_plan_digest": "TEXT",
+                "pause_profile_id": "TEXT",
+                "tts_snapshot": "JSON",
+                "tts_snapshot_digest": "TEXT",
+                "estimated_speech_seconds": "FLOAT",
+                "estimated_pause_seconds": "FLOAT",
+                "estimated_total_seconds": "FLOAT",
+                "actual_duration_seconds": "FLOAT",
+                "stage": "TEXT",
+                "completed_segments": "INTEGER DEFAULT 0",
+                "total_segments": "INTEGER",
+            }
+            for name, sql_type in additions.items():
+                if name not in audio_names:
+                    await conn.exec_driver_sql(
+                        f"ALTER TABLE audio_tasks ADD COLUMN {name} {sql_type}"
+                    )
+
+        script_table = await conn.exec_driver_sql(
+            "SELECT name FROM sqlite_master WHERE type='table' AND name='scripts'"
+        )
+        if script_table.first() is not None:
+            script_columns = await conn.exec_driver_sql("PRAGMA table_info(scripts)")
+            if "script_plan" not in {row[1] for row in script_columns.fetchall()}:
+                await conn.exec_driver_sql("ALTER TABLE scripts ADD COLUMN script_plan JSON")
+
         table_rows = await conn.exec_driver_sql(
             "SELECT name FROM sqlite_master WHERE type='table' AND name='settings'"
         )
@@ -35,9 +70,7 @@ async def migrate_database(database_engine: AsyncEngine = engine) -> None:
                 "provider": "minimax",
             }
             aliyun_keys = {"api_key", "workspace_id", "base_url", "model", "source_format"}
-            migrated["aliyun"].update(
-                {key: legacy[key] for key in aliyun_keys if key in legacy}
-            )
+            migrated["aliyun"].update({key: legacy[key] for key in aliyun_keys if key in legacy})
             await conn.exec_driver_sql(
                 "UPDATE settings SET music_config = ? WHERE id = ?",
                 (json.dumps(migrated, ensure_ascii=False), setting_id),

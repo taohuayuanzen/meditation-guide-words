@@ -5,6 +5,9 @@
 > 关联任务：`docs/task/05-tts-and-worker.md`
 > 说明：本文档仅覆盖**需要人工操作**的部分：供应商凭证开通、数据库重建、TTS 配置、Worker 启动与真实凭证联调验证。
 
+> T17 更新：新格式结构化脚本使用“预览摘要 → 分段 WAV → 确定性静音 → MP3”流水线。
+> 数据库现在采用幂等增量迁移，不再需要为 T17 删除数据库。旧格式脚本和历史任务继续兼容。
+
 ---
 
 ## 一、人工操作清单
@@ -143,6 +146,16 @@ uv run python -m app.services.audio_worker
 - 正常启动后无输出，有任务时处理并写日志到终端
 - 失败自动重试 1 次，仍失败置 `failed` 并写 `error_msg`
 - 启动顺序：先启动后端（建表），再启动 Worker
+
+新格式任务创建前还需确认：
+
+```powershell
+curl http://localhost:8000/api/audio-tasks/capabilities
+```
+
+`audio_rendering_available=true` 后才能创建任务。预览响应中的
+`render_plan_digest` 和 `preview_digest` 必须原样提交；脚本或 TTS 配置改变后服务端返回
+409，客户端应重新生成预览。失败重试会复用任务快照和已经校验的中间 WAV。
 
 > 手动联调可只开 Worker 窗口观察日志；Worker 崩溃会导致任务停滞，可用 `taskkill` 后重新启动。
 

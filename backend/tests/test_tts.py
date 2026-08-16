@@ -221,6 +221,26 @@ async def test_aliyun_cosyvoice_ignores_instruction():
     assert "instruction" not in captured["body"]["input"]
 
 
+async def test_aliyun_cosyvoice_enables_runtime_ssml():
+    captured = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        captured["body"] = json.loads(request.content)
+        events = [
+            {"output": {"audio": {"data": base64.b64encode(b"x").decode()}}},
+            {"output": {"finish_reason": "stop"}},
+        ]
+        return httpx.Response(200, content=b"".join(_sse_line(e) for e in events))
+
+    service = AliyunTTS("ak", model="cosyvoice-v3-flash", transport=httpx.MockTransport(handler))
+    await service.synthesize(
+        '<speak>吸气<break time="5000ms"/></speak>',
+        "longanyang",
+        enable_ssml=True,
+    )
+    assert captured["body"]["input"]["enable_ssml"] is True
+
+
 async def test_aliyun_instruction_truncates_to_100_chars():
     captured = {}
 

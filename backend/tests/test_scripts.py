@@ -8,6 +8,46 @@ async def test_create_script(client):
     data = await _create_script(client)
     assert data["id"] is not None
     assert data["title"] == "测试引导词"
+    assert data["pause_capable"] is False
+
+
+async def test_create_structured_script_generates_content_and_ids(client):
+    resp = await client.post(
+        "/api/scripts",
+        json={
+            "title": "结构化脚本",
+            "script_plan": {
+                "version": 1,
+                "target_duration_seconds": 600,
+                "blocks": [
+                    {"text": "第一段。", "pause_after": {"kind": "paragraph"}},
+                    {"text": "第二段。", "pause_after": {"kind": "ending"}},
+                ],
+            },
+        },
+    )
+    assert resp.status_code == 201
+    body = resp.json()
+    assert body["content"] == "第一段。\n\n第二段。"
+    assert [block["id"] for block in body["script_plan"]["blocks"]] == ["b1", "b2"]
+    assert body["pause_capable"] is True
+    assert body["target_duration_seconds"] == 600
+
+
+async def test_structured_script_rejects_conflicting_content(client):
+    resp = await client.post(
+        "/api/scripts",
+        json={
+            "title": "漂移",
+            "content": "另一份正文",
+            "script_plan": {
+                "version": 1,
+                "target_duration_seconds": 60,
+                "blocks": [{"text": "真实正文", "pause_after": {"kind": "short"}}],
+            },
+        },
+    )
+    assert resp.status_code == 422
 
 
 async def test_list_scripts_empty(client):

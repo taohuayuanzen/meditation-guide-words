@@ -1,6 +1,6 @@
 # 服务启动执行手册
 
-> **适用范围**：本机（Windows）首次启动与日常启动冥想引导工作台全部服务
+> **适用范围**：本机（Windows）首次启动与日常启动冥想音频工作台全部服务
 > **目标读者**：AI Agent 按步骤执行；人类可参考备注理解
 > **涉及服务**：Dify、后端（FastAPI）、音频 Worker、前端（Vite）
 > **固定路径**：
@@ -49,7 +49,7 @@ Docker version 27.x.x
 
 ### 1.1 启动 Dify
 
-> Dify 详细运维见 [`docs/ops/t3-operations.md`](./t3-operations.md)。本手册只负责检查与启动。
+> Dify 详细运维见 [`docs/ops/dify-operations.md`](./dify-operations.md)。本手册只负责检查与启动。
 
 **步骤 1.1.1：检查 Dify 是否已在运行**
 
@@ -86,7 +86,7 @@ Write-Host "Dify 状态码: $code"
   ```powershell
   docker compose logs --tail 100
   ```
-- 参考 [`docs/ops/t3-operations.md`](./t3-operations.md) 排错。
+- 参考 [`docs/ops/dify-operations.md`](./dify-operations.md) 排错。
 
 ---
 
@@ -333,6 +333,6 @@ docker compose logs --tail 100
 - [服务停止执行手册](./service-shutdown.md)
 - [后端启动与运维指南](./backend/backend-startup.md)
 - [前端启动与运维指南](./frontend/frontend-startup.md)
-- [Dify 日常运维](./t3-operations.md)
+- [Dify 日常运维](./dify-operations.md)
 - [TTS 凭证与联调](./t5-tts-operations.md)
 - [阿里云音色更新说明](./aliyun/voice-update-guide.md)

@@ -1,4 +1,4 @@
-# 冥想引导工作台
+# 冥想音频工作台
 
 本地运行的冥想引导词生成 Web 应用：通过自然语言对话生成冥想引导词，并根据声音提示词解析出 TTS 参数、异步生成冥想音频，支持在线播放与下载。
 
@@ -95,7 +95,7 @@ cd backend
 4. **Dify**：填写 Dify 地址与两个应用的 API Key（App A / App B）。
 5. **通用**：语言（中/英）、主题（浅色/深色）、音频保存目录。
 
-> TTS 凭证获取与联调步骤见 `docs/ops/t5-tts-operations.md`；Dify 部署与 App 创建见 `docs/ops/t3-operations.md`。
+> TTS 凭证获取与联调步骤见 `docs/ops/t5-tts-operations.md`；Dify 部署与 App 创建见 `docs/ops/dify-operations.md`。
 
 ## 项目结构
 

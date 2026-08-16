@@ -1,6 +1,6 @@
 # 服务停止执行手册
 
-> **适用范围**：本机（Windows）停止冥想引导工作台全部服务
+> **适用范围**：本机（Windows）停止冥想音频工作台全部服务
 > **目标读者**：AI Agent 按步骤执行；人类可参考备注理解
 > **涉及服务**：前端（Vite）、音频 Worker、后端（FastAPI）、Dify
 > **固定路径**：
@@ -253,6 +253,6 @@ $env:Path = "C:\Program Files\Docker\Docker\resources\bin;$env:Path"
 ## 6. 相关文档
 
 - [服务启动执行手册](./startup-runbook.md)
-- [Dify 日常运维](./t3-operations.md)
+- [Dify 日常运维](./dify-operations.md)
 - [后端启动与运维指南](./backend/backend-startup.md)
 - [前端启动与运维指南](./frontend/frontend-startup.md)

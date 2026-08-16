@@ -6,7 +6,15 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.config import setup_logging
 from app.db import create_tables, init_db
 from app.db_migrations import migrate_database
-from app.routers import artifacts, audio_tasks, dify_proxy, music_tasks, scripts, settings
+from app.routers import (
+    artifacts,
+    audio_render_plans,
+    audio_tasks,
+    dify_proxy,
+    music_tasks,
+    scripts,
+    settings,
+)
 
 setup_logging()
 
@@ -45,3 +53,6 @@ app.include_router(audio_tasks.router, prefix="/api/audio-tasks", tags=["audio-t
 app.include_router(music_tasks.router, prefix="/api/music-tasks", tags=["music-tasks"])
 app.include_router(artifacts.router, prefix="/api/artifacts", tags=["artifacts"])
 app.include_router(dify_proxy.router, prefix="/api/dify", tags=["dify"])
+app.include_router(
+    audio_render_plans.router, prefix="/api/audio-render-plans", tags=["audio-render-plans"]
+)

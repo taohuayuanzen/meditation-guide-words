@@ -10,6 +10,9 @@ from app.db import AsyncSessionLocal
 from app.models.audio_task import AudioTask
 from app.models.script import Script
 from app.models.setting import Setting
+from app.services.audio_postprocessor import probe_audio
+from app.services.audio_render_files import final_path
+from app.services.audio_renderer import AudioRenderer
 from app.services.tts_factory import get_tts_service
 from app.utils.time_utils import utc_now
 
@@ -44,6 +47,10 @@ async def process_task(task_id: int, *, session_factory: async_sessionmaker = As
         await db.commit()
 
         try:
+            if task.render_plan is not None:
+                await _process_render_task(task, setting, db)
+                await db.commit()
+                return
             if len(script.content) > MAX_TEXT_LENGTH:
                 raise ValueError(
                     f"文本过长（{len(script.content)} 字），当前上限 {MAX_TEXT_LENGTH} 字"
@@ -123,6 +130,47 @@ async def process_task(task_id: int, *, session_factory: async_sessionmaker = As
                 task.status = "failed"
         finally:
             await db.commit()
+
+
+async def _process_render_task(task: AudioTask, setting: Setting, db: AsyncSession) -> None:
+    snapshot = task.tts_snapshot or {}
+    current_config = setting.tts_config or {}
+    if current_config.get("provider", "aliyun") != snapshot.get("provider"):
+        raise ValueError("任务供应商凭证不可用：当前配置与任务快照不匹配")
+    service_config = {**current_config, **snapshot}
+    service = get_tts_service(service_config)
+    if not service.is_available():
+        raise ValueError("任务对应供应商凭证缺失")
+    output_dir = (setting.general_config or {}).get("audio_output_dir") or settings.audio_output_dir
+    existing = final_path(task.id, output_dir)
+    if existing.is_file():
+        try:
+            info = probe_audio(existing)
+            task.status = "completed"
+            task.stage = "completed"
+            task.file_path = str(existing)
+            task.actual_duration_seconds = info.duration_seconds
+            task.completed_at = utc_now()
+            task.error_msg = None
+            return
+        except Exception:
+            pass
+
+    async def progress(completed: int, stage: str) -> None:
+        task.completed_segments = completed
+        task.stage = stage
+        await db.commit()
+
+    task.stage = "synthesizing"
+    renderer = AudioRenderer(service, output_dir)
+    path, duration = await renderer.render(task, progress=progress)
+    task.status = "completed"
+    task.stage = "completed"
+    task.completed_segments = task.total_segments or task.completed_segments
+    task.file_path = str(path)
+    task.actual_duration_seconds = duration
+    task.completed_at = utc_now()
+    task.error_msg = None
 
 
 async def worker_loop(

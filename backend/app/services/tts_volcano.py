@@ -73,7 +73,16 @@ class VolcanoTTS(TTSBase):
             return await self._fetch_access_token()
 
     async def synthesize(
-        self, text, voice_id, speed=1.0, volume=1.0, output_format="mp3", instruction=None
+        self,
+        text,
+        voice_id,
+        speed=1.0,
+        volume=1.0,
+        output_format="mp3",
+        instruction=None,
+        pitch=1.0,
+        sample_rate=48000,
+        **context,
     ):
         token = await self._ensure_token()
         audio_bytes = await self._call_tts(text, voice_id, speed, volume, output_format, token)

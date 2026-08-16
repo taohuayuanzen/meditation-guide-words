@@ -14,6 +14,10 @@ def music_capabilities_available(monkeypatch):
         "app.routers.music_tasks.get_media_capabilities",
         lambda: MediaCapabilities(ffmpeg_available=True, ffprobe_available=True),
     )
+    monkeypatch.setattr(
+        "app.routers.audio_tasks.get_media_capabilities",
+        lambda: MediaCapabilities(ffmpeg_available=True, ffprobe_available=True),
+    )
 
 
 @pytest.fixture

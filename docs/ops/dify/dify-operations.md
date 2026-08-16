@@ -1,5 +1,7 @@
 # T3 操作文档：Dify 日常运维
 
+> 编排页长期显示“同步数据中”时，参见 [SECRET_KEY 同步修复手册](./fix-workflow-sync-secret-key.md)。
+
 > 日期：2026-08-05  
 > 适用范围：Dify 开源版（`C:\projects\github\dify\dify-1.16.1`）日常启动、停止与状态检查  
 > 关联任务：`docs/task/03-dify-setup.md`  
@@ -115,5 +117,4 @@ docker compose logs --tail 100   # 最近 100 行全部日志
 ## 相关文档
 
 - [T3 任务文档](../task/03-dify-setup.md)
-- [T3 交接文档](t3-handover.md)
 - [Docker 镜像加速器配置](docker-mirror-setup.md)

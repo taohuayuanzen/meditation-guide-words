@@ -1,5 +1,7 @@
 # T3：Dify 开源版部署与智能体配置
 
+> T16 之后，实际 Dify 发布与验证以 [语义停顿 Prompt 发布手册](../ops/dify/publish-pause-semantics-prompts.md) 为准；本文保留初始部署背景。
+
 ## 任务目标
 
 在指定外部路径独立部署 Dify 开源版，创建两个 Chat 应用，分别配置"引导词生成"和"音频生成"的 System Prompt 与变量，验证 API 连通性，为 FastAPI 代理提供可调用的 Dify 端点。
@@ -116,14 +118,18 @@ docker compose up -d
 #### System Prompt 示例
 
 ```
-你是一位专业的冥想引导词创作专家。请根据用户的需求，生成一段适合朗读、节奏舒缓、结构清晰的冥想引导词。
+你是一位专业的冥想引导词创作专家。每次回复都返回完整的最新 JSON，不返回局部 patch 或 JSON 以外的内容。
 
 要求：
 1. 使用第二人称"你"，语气温柔、安抚。
-2. 段落分明，包含开场、主体引导、结束三个部分。
-3. 语言口语化，避免复杂术语。
-4. 如用户未指定时长，默认生成 5~10 分钟可朗读的内容。
-5. 输出纯文本，不要加 Markdown 标题、列表符号或表情。
+2. 按“开场安顿 → 主体练习 → 回收注意 → 结束”组织，目标时长包含朗读与留白。
+3. block 按完整表达或练习步骤划分，主体显式安排 breath、observe 或 practice。
+4. pause_after.kind 只允许 short、paragraph、breath、observe、practice、transition、ending、none。
+5. breath.count 为 1～10；observe/practice 的 suggested_seconds 为 5～60。
+6. 不输出 SSML、Markdown、XML、方括号停顿标记或供应商参数。
+
+JSON Schema：
+{"title":"标题","version":1,"target_duration_seconds":600,"blocks":[{"text":"可读正文","pause_after":{"kind":"paragraph"}}]}
 ```
 
 #### 模型配置
@@ -140,33 +146,32 @@ docker compose up -d
 #### System Prompt 示例
 
 ```
-你是一位声音设计助理。用户会用自然语言描述他想要的冥想音频声音风格。请从描述中提取以下参数，并输出为严格的 JSON 格式，不要输出任何其他内容。
+你是冥想音频编排助理。输入包含 script_plan、pause_profile、voice_prompt 和 tts_context。只量化停顿并提取声音参数，不得改写、删减、新增或重排正文。
 
 JSON Schema：
 {
-  "voice_id": "音色ID字符串",
-  "speed": 0.8,
-  "volume": 1.0,
-  "emotion": "情绪标签，如 gentle/calm/warm",
-  "output_format": "mp3"
+  "version": 1,
+  "pause_profile_id": "standard_v1",
+  "voice": {"voice_id":"允许列表中的 ID","rate":0.86,"volume":1.0,"pitch":1.0,"instruction":"简洁声音描述"},
+  "segments": [{"id":"b1","text":"原文","pause_after_ms":1800,"pause_kind":"paragraph","pause_strategy":"silence"}]
 }
 
 规则：
-1. 如果用户没有指定具体音色，请根据性别、年龄感选择合理的 voice_id。
-2. speed 范围 0.5~2.0，冥想场景建议 0.8~1.0。
-3. volume 范围 0~2.0，默认 1.0。
-4. 只输出 JSON，不要加 markdown 代码块、不要解释。
+1. segments 与 blocks 的 ID、顺序、文本严格一一对应。
+2. short 使用 natural；none 使用 natural 且为 0ms；其余使用 silence。
+3. 时长严格按 pause_profile 计算；voice_id 只能来自 allowed_voices。
+4. rate 为 0.75～1.05，volume 为 0～2，pitch 为 0.5～2；情绪合并到 instruction。
+5. 不输出 SSML、供应商请求体、代码块或解释。
 ```
 
 #### 变量配置
-在 Chatflow 中定义一个输入变量：
-- `script_content`：引导词正文，字符串类型
+在 Chatflow 中定义四个字符串输入变量：`script_plan`、`pause_profile`、`voice_prompt`、`tts_context`（结构化值以 JSON 字符串传入）。
 
 工作流设计：
 ```
-用户输入（声音描述） + 变量 script_content
+声音描述 + 四个受控输入变量
         ↓
-LLM 节点（解析为 TTS 参数 JSON）
+LLM 节点（输出供应商无关 render_plan）
         ↓
 结束节点（输出 JSON）
 ```

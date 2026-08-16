@@ -11,6 +11,9 @@ class TTSBase(ABC):
         volume: float = 1.0,
         output_format: str = "mp3",
         instruction: str | None = None,
+        pitch: float = 1.0,
+        sample_rate: int = 48000,
+        **context,
     ) -> bytes:
         """返回音频二进制数据"""
         pass

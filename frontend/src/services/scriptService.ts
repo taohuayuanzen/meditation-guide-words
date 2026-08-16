@@ -1,8 +1,9 @@
-import type { Script, ScriptListResponse } from '@/types';
+import type { Script, ScriptListResponse, ScriptPlan } from '@/types';
 
 export interface CreateScriptPayload {
   title: string;
-  content: string;
+  content?: string;
+  script_plan?: ScriptPlan;
   session_id?: string | null;
 }
 

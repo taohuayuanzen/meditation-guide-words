@@ -1,10 +1,13 @@
-import type { AudioTask } from '@/types';
+import type { AudioCapabilities, AudioRenderPlan, AudioTask } from '@/types';
 import { readErrorDetail } from '@/services/http';
 
 export async function createAudioTask(
   scriptId: number,
   voicePrompt: string,
   ttsParams?: Record<string, unknown>,
+  renderPlan?: AudioRenderPlan,
+  renderPlanDigest?: string,
+  previewDigest?: string,
 ): Promise<AudioTask> {
   const res = await fetch('/api/audio-tasks', {
     method: 'POST',
@@ -13,10 +16,19 @@ export async function createAudioTask(
       script_id: scriptId,
       voice_prompt: voicePrompt,
       tts_params: ttsParams,
+      render_plan: renderPlan,
+      render_plan_digest: renderPlanDigest,
+      preview_digest: previewDigest,
     }),
   });
   if (!res.ok) throw new Error(await readErrorDetail(res));
   return (await res.json()) as AudioTask;
+}
+
+export async function fetchAudioCapabilities(): Promise<AudioCapabilities> {
+  const res = await fetch('/api/audio-tasks/capabilities');
+  if (!res.ok) throw new Error(await readErrorDetail(res));
+  return (await res.json()) as AudioCapabilities;
 }
 
 export async function fetchAudioTasks(): Promise<AudioTask[]> {

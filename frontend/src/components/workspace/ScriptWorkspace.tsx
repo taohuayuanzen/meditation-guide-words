@@ -19,13 +19,16 @@ import { ChatMessage } from '@/components/workspace/ChatMessage';
 import { ScriptEmptyState } from '@/components/workspace/ScriptEmptyState';
 import { useToast } from '@/hooks/useToast';
 import { readErrorDetail } from '@/services/http';
+import { parseGeneratedScript } from '@/services/difyService';
 import { createScript } from '@/services/scriptService';
+import type { GeneratedScript } from '@/types';
 import { SSEDecoder, extractConversationId, extractStreamAnswer } from '@/utils/sseParser';
 
 interface Message {
   id: number;
   role: 'user' | 'assistant';
   content: string;
+  script?: GeneratedScript;
 }
 
 export function ScriptWorkspace() {
@@ -37,7 +40,7 @@ export function ScriptWorkspace() {
   const [conversationId, setConversationId] = useState('');
   const [error, setError] = useState('');
   const [errorTitle, setErrorTitle] = useState('');
-  const [scriptToSave, setScriptToSave] = useState<string | null>(null);
+  const [scriptToSave, setScriptToSave] = useState<GeneratedScript | null>(null);
   const [scriptTitle, setScriptTitle] = useState('');
   const [isSaving, setIsSaving] = useState(false);
   const bottomRef = useRef<HTMLDivElement>(null);
@@ -115,6 +118,8 @@ export function ScriptWorkspace() {
       const decoder = new TextDecoder();
       const parser = new SSEDecoder();
       let nextConversationId = conversationId;
+      let completeAnswer = '';
+      let streamFailed = false;
 
       while (true) {
         const { done, value } = await reader.read();
@@ -124,14 +129,32 @@ export function ScriptWorkspace() {
           const cid = extractConversationId(event);
           if (cid) nextConversationId = cid;
           const answer = extractStreamAnswer(event);
-          if (answer) appendToLastAssistant(answer);
+          if (answer) {
+            completeAnswer += answer;
+            appendToLastAssistant(answer);
+          }
           if (event.event === 'error') {
+            streamFailed = true;
             const detail = String(event.data.message ?? event.data.detail ?? t('chat.streamError'));
             setChatError(detail);
           }
         }
       }
       if (nextConversationId) setConversationId(nextConversationId);
+      if (!streamFailed) {
+        try {
+          const script = parseGeneratedScript(completeAnswer);
+          const readableContent = script.blocks.map((block) => block.text).join('\n\n');
+          setMessages((prev) => {
+            const last = prev[prev.length - 1];
+            if (!last || last.role !== 'assistant') return prev;
+            return [...prev.slice(0, -1), { ...last, content: readableContent, script }];
+          });
+        } catch (parseError) {
+          const detail = parseError instanceof Error ? parseError.message : t('chat.streamError');
+          setChatError(`结构化引导词解析失败：${detail}`);
+        }
+      }
     } catch (err) {
       if (err instanceof Error && err.name === 'AbortError') {
         appendToLastAssistant(`\n${t('chat.stopped')}`);
@@ -155,9 +178,9 @@ export function ScriptWorkspace() {
     setScriptTitle('');
   };
 
-  const openSaveDialog = (content: string) => {
-    setScriptToSave(content);
-    setScriptTitle('');
+  const openSaveDialog = (script: GeneratedScript) => {
+    setScriptToSave(script);
+    setScriptTitle(script.title);
   };
 
   const handleSaveMessage = async () => {
@@ -166,7 +189,11 @@ export function ScriptWorkspace() {
     try {
       await createScript({
         title: scriptTitle.trim(),
-        content: scriptToSave,
+        script_plan: {
+          version: 1,
+          target_duration_seconds: scriptToSave.target_duration_seconds,
+          blocks: scriptToSave.blocks,
+        },
         session_id: conversationId || null,
       });
       success(t('chat.saved'));
@@ -217,7 +244,9 @@ export function ScriptWorkspace() {
                   isAssistantStreaming && msg.id === lastAssistant?.id && msg.role === 'assistant'
                 }
                 onSave={
-                  msg.role === 'assistant' ? () => openSaveDialog(msg.content) : undefined
+                  msg.role === 'assistant' && msg.script
+                    ? () => openSaveDialog(msg.script as GeneratedScript)
+                    : undefined
                 }
               />
             ))
