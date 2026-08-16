@@ -1,6 +1,5 @@
-import { Archive, FileText, Headphones, Menu, Music2, Settings } from 'lucide-react';
+import { Archive, FileText, Headphones, Menu, Music2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { useNavigate } from 'react-router-dom';
 
 import { Button } from '@/components/ui/button';
 import { Sheet, SheetContent, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
@@ -22,7 +21,6 @@ const WORKSPACE_TITLE_KEY: Record<keyof typeof ICONS, string> = {
 };
 
 export function Header() {
-  const navigate = useNavigate();
   const { currentWorkspace, mobileMenuOpen, setMobileMenuOpen } = useAppStore();
   const { t } = useTranslation();
   const title = t(WORKSPACE_TITLE_KEY[currentWorkspace]);
@@ -54,14 +52,6 @@ export function Header() {
         <Icon className="h-5 w-5 text-muted-foreground" />
         <h2 className="text-lg font-semibold">{title}</h2>
       </div>
-      <Button
-        variant="ghost"
-        size="icon"
-        aria-label={t('settings.title')}
-        onClick={() => navigate('/settings')}
-      >
-        <Settings className="h-5 w-5" />
-      </Button>
     </header>
   );
 }

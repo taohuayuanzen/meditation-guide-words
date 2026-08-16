@@ -60,14 +60,14 @@ export function TaskItem({ task, script, onRetry }: TaskItemProps) {
           {task.status === 'completed' && task.actual_duration_seconds != null && <div className="text-xs text-muted-foreground">{t('audio.taskActual', { duration: formatDuration(task.actual_duration_seconds, i18n.language), percent: Math.abs(task.duration_deviation_percent ?? 0).toFixed(1) })}</div>}
           {task.status === 'failed' && task.render_plan_version && <div className="mt-2 text-xs text-muted-foreground">{t(task.stage === 'assembling' || task.stage === 'encoding' || task.stage === 'verifying' ? 'audio.retryLocalHint' : 'audio.retryPlanHint')}</div>}
         </div>
-        <div className="flex items-center justify-end gap-2">
+        <div className="flex min-w-0 w-full items-center justify-end gap-2">
           {task.status === 'completed' ? (
             /* biome-ignore lint/a11y/useMediaCaption: generated audio has no captions */
             <audio
               controls
               preload="none"
               src={getAudioDownloadUrl(task.id)}
-              className="h-8 w-44"
+              className="h-8 w-full"
             />
           ) : null}
           {task.status === 'failed' ? (

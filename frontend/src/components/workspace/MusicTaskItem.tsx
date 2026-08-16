@@ -1,5 +1,4 @@
 import { Download, RotateCcw, Sparkles, Trash2 } from 'lucide-react';
-import { useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 
 import { Button } from '@/components/ui/button';
@@ -29,17 +28,10 @@ const STAGE_KEYS = {
 
 export function MusicTaskItem({ task, onRetry, onDownload, onDelete }: MusicTaskItemProps) {
   const { t } = useTranslation();
-  const audioRef = useRef<HTMLAudioElement>(null);
-  const [volume, setVolume] = useState(1);
   const tags = Object.entries(task.preset_params)
     .filter(([key]) => key !== 'scene')
     .flatMap(([, value]) => (Array.isArray(value) ? value : [value]))
     .filter((value): value is string => typeof value === 'string');
-
-  const changeVolume = (next: number) => {
-    setVolume(next);
-    if (audioRef.current) audioRef.current.volume = next;
-  };
 
   return (
     <article className="space-y-3 rounded-2xl border bg-card p-4">
@@ -90,28 +82,13 @@ export function MusicTaskItem({ task, onRetry, onDownload, onDelete }: MusicTask
       {task.error_msg ? <p className="text-sm text-destructive">{task.error_msg}</p> : null}
 
       {task.status === 'completed' ? (
-        <div className="space-y-2">
-          {/* biome-ignore lint/a11y/useMediaCaption: generated music has no captions */}
-          <audio
-            ref={audioRef}
-            controls
-            preload="none"
-            src={getMusicDownloadUrl(task.id, 'final')}
-            className="h-9 w-full"
-          />
-          <label className="flex items-center gap-2 text-xs text-muted-foreground">
-            {t('music.playerVolume')}
-            <input
-              type="range"
-              min="0"
-              max="1"
-              step="0.05"
-              value={volume}
-              onChange={(event) => changeVolume(Number(event.target.value))}
-              className="flex-1"
-            />
-          </label>
-        </div>
+        /* biome-ignore lint/a11y/useMediaCaption: generated music has no captions */
+        <audio
+          controls
+          preload="none"
+          src={getMusicDownloadUrl(task.id, 'final')}
+          className="h-9 w-full"
+        />
       ) : null}
 
       <div className="flex flex-wrap justify-end gap-2">
